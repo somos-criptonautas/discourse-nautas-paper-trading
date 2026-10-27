@@ -16,15 +16,18 @@ que actúa como `system`.
   gana el nivel de abajo más cercano a la entrada: SL antes que liquidación (el precio cae y toca primero el
   SL, que siempre está por encima), y cualquiera de los dos antes que TP (regla conservadora, idéntica en
   artifact y n8n).
-- Activos: BTC, ETH, PAXG, XMR, XNO, TRX, cotizados en USD. Fuente: CoinGecko, plan gratuito.
+- Activos: BTC, ETH, PAXG, XMR, XNO, TRX, cotizados en USD. Fuente: velas de 4h del endpoint público de Kraken
+  (`/0/public/OHLC`, `interval=240`, sin clave), pares XBTUSD, ETHUSD, PAXGUSD, XMRUSD, NANOUSD (XNO), TRXUSD.
+  Trae 720 velas por llamada, unos cuatro meses, con volumen por vela.
 - Saldo inicial 1.000 USD, cercano a lo que pondría alguien que empieza. Reinicio libre; el ranking muestra
   cuántas veces reinició cada uno.
 - Tamaños: el monto se ingresa en USD, mínimo 10, máximo el saldo; el artifact muestra las unidades con
   fracciones y ofrece 2%, 5% y 10% del saldo. Cada compra es una posición independiente con su TP, SL y
   apalancamiento; se cierra a mano de a una.
-- Gráfico de velas de 4h por activo, dibujado en SVG dentro del artifact, con rango de una semana, un mes o
-  seis meses, y líneas de entrada, TP, SL y liquidación de las posiciones abiertas en ese activo. Sin zoom,
-  indicadores ni dibujo libre.
+- Gráfico de velas de 4h por par, dibujado en SVG dentro del artifact: rango de una semana, un mes o seis
+  meses, zoom y desplazamiento, precio actual marcado en el eje, líneas de entrada, TP, SL y liquidación de
+  las posiciones abiertas en ese par (las que caen fuera de la escala van pegadas al borde). Debajo, barras de
+  volumen y un estocástico 14,3,3 rotulado "estocástico (stoch)". Sin dibujo libre ni más indicadores.
 - Privacidad: operaciones privadas. Público sólo el ranking con nombre, rendimiento y reinicios.
 - Avisos: el usuario ve sus ejecuciones al abrir el artifact. n8n manda un resumen diario sin nombres
   al mensaje grupal de participantes.
@@ -75,12 +78,12 @@ marca "borró operaciones" hasta su próximo reinicio.
 ## 2. Datos publicados por `system`
 
 - `candles-<AAAA-Www>-a` y `candles-<AAAA-Www>-b` (dos claves por semana ISO, tres activos cada una):
-  velas de 4h. Valor JSON compacto: `{ "t0": <epoch del primer cierre>, "btc": [[h,l,c], ...], ... }`,
-  42 velas por activo, precios con cuatro cifras significativas. Unos 2.300 caracteres por clave: una
-  sola clave semanal con los seis activos rozaría el límite de 5.000. Se conservan 26 semanas (52
+  velas de 4h. Valor JSON compacto: `{ "t0": <epoch del primer cierre>, "btc": [[h,l,c,v], ...], ... }`,
+  42 velas por activo, precios y volumen (en unidades del activo) con cuatro cifras significativas. Unos
+  3.000 caracteres por clave: una sola clave semanal con los seis activos superaría el límite de 5.000. Se conservan 26 semanas (52
   claves de las 100 que admite `system`); las más viejas se borran.
-- `now`: `{ "t": <epoch>, "btc": 67123.4, ... }`, precio de referencia actualizado cada 5 minutos. Sólo
-  para mostrar; nunca entra en el repaso.
+- `now`: `{ "t": <epoch>, "btc": 67123.4, ... }`, último precio (cierre de la vela en curso de Kraken),
+  actualizado cada 5 minutos. Sólo para mostrar y precargar TP/SL; nunca entra en el repaso.
 - `ranking`: `{ "t": <epoch>, "rows": [{ "u": "nombre", "r": 12.3, "resets": 1 }, ...] }`, ordenado por
   rendimiento, actualizado cada hora. Quienes borraron operaciones no aparecen.
 
@@ -91,10 +94,11 @@ dice y propone reiniciar. Caso raro para swing; si aparece, se amplía el histor
 
 Nombres en inglés y minúsculas con guión, como el resto.
 
-- `paper-trading-prices`, cada 5 minutos: pide a CoinGecko el precio de los seis activos, escribe `now`
-  y actualiza la vela de 4h en curso (máximo, mínimo, último) de la clave semanal. Si CoinGecko falla,
-  no escribe nada; la vela sigue con los datos anteriores. Una llamada cada 5 minutos está muy por
-  debajo del límite gratuito.
+- `paper-trading-prices`, cada 5 minutos: pide a Kraken las velas de 4h de los seis pares (seis llamadas),
+  escribe `now` y reescribe las claves de la semana en curso y la anterior con las velas tal cual vienen,
+  incluida la vela abierta. Una corrida manual con `backfill=true` escribe todas las semanas de la respuesta
+  (unos cuatro meses). Si Kraken falla para un par, ese par no se toca. Seis llamadas cada 5 minutos están
+  muy por debajo del límite público de Kraken.
 - `paper-trading-ranking`, cada hora: pagina las claves de todos los usuarios (`all_users=true`, de a
   100), corre `replay` por usuario, registra las claves vistas, detecta borrados y publica `ranking`.
 - `paper-trading-daily`, una vez al día: cuenta ejecuciones de TP, SL y órdenes de las últimas 24h a
@@ -112,9 +116,10 @@ Secciones, de arriba a abajo:
 2. Gráfico de velas del activo elegido, con rango y líneas de las posiciones abiertas.
 3. Posiciones abiertas: activo, entrada, apalancamiento, TP, SL, liquidación, valor de referencia (`now`),
    resultado y botón de cerrar.
-4. Nueva orden: activo, monto en USD con botones 2/5/10% del saldo, 1x o 2x, TP y SL opcionales. Texto fijo: "Se
-   ejecuta al cierre de la vela de 4h, a las HH:MM". Validación en cliente: monto entre 10 USD y el saldo;
-   TP mayor y SL menor que el precio de referencia; con 2x, SL por encima del precio de liquidación.
+4. Nueva orden para el par elegido en el gráfico: monto en USD con botones 2/5/10% del saldo y el saldo
+   disponible a la vista, 1x o 2x, TP y SL opcionales precargados con el precio actual para editarlos. Texto
+   fijo: "se ejecuta al cierre de la vela de 4h, a las HH:MM". Validación en cliente: monto entre 10 USD y el
+   saldo; TP mayor y SL menor que el precio de referencia; con 2x, SL por encima del precio de liquidación.
 5. Órdenes pendientes de cierre de vela.
 6. Historial de ejecuciones.
 7. Ranking, con el puesto propio resaltado.
@@ -141,5 +146,5 @@ Un solo artifact para toda la comunidad, embebido en un tema propio del foro.
 
 ## Fuera de alcance
 
-Ligas con plazo, órdenes límite de entrada, apalancamiento mayor a 2x, cortos, zoom e indicadores en el
-gráfico, notificaciones individuales, más activos.
+Ligas con plazo, órdenes límite de entrada, apalancamiento mayor a 2x, cortos, otros indicadores y dibujo
+libre en el gráfico, notificaciones individuales, más activos.
