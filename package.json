@@ -1,0 +1,1 @@
+{ "name": "discourse-nautas-paper-trading", "private": true, "scripts": { "test": "node test/replay.test.js && node test/chart.test.js && node test/n8n.test.js" } }
