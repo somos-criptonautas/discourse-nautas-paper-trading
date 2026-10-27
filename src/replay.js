@@ -74,9 +74,9 @@ function replay(keyValues, candles, now) {
       const k = byAsset[p.asset];
       if (!k || k.t <= p.openedAt) continue;
       // Falling price reaches the higher level first: an SL above the liquidation price wins
-      if (p.sl && k.l <= p.sl && !(p.liq && p.sl < p.liq && k.l <= p.liq)) closePos(p, "sl", p.sl, t);
-      else if (p.liq && k.l <= p.liq) closePos(p, "liq", p.liq, t);
-      else if (p.tp && k.h >= p.tp) closePos(p, "tp", p.tp, t);
+      if (p.sl && k.l <= p.sl && !(p.liq && p.sl < p.liq && k.l <= p.liq)) closePos(p, "sl", Math.min(p.sl, k.h), t);
+      else if (p.liq && k.l <= p.liq) closePos(p, "liq", Math.min(p.liq, k.h), t);
+      else if (p.tp && k.h >= p.tp) closePos(p, "tp", Math.max(p.tp, k.l), t);
     }
     // Orders created inside this candle fill at its close
     for (; qi < orders.length && orders[qi].created < t + CANDLE; qi++) {
@@ -86,12 +86,14 @@ function replay(keyValues, candles, now) {
       if (o.side === "sell") {
         const p = st.positions.find((x) => x.id === o.of);
         if (!p) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: "La posición ya estaba cerrada" }); continue; }
+        if (!byAsset[p.asset]) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: "Sin vela de " + p.asset.toUpperCase() }); continue; }
         closePos(p, "sell", byAsset[p.asset].c, tc);
         continue;
       }
       const k = byAsset[o.asset];
       if (!k) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: "Sin vela de " + o.asset.toUpperCase() }); continue; }
       if (o.usd > st.balance + 1e-9) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: "Saldo insuficiente" }); continue; }
+      if ((o.sl && o.sl >= k.c) || (o.tp && o.tp <= k.c)) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: "SL o TP del lado equivocado del precio de entrada" }); continue; }
       st.balance -= o.usd;
       const entry = k.c, qty = (o.usd * o.lev) / entry;
       st.positions.push({ id: o.id, asset: o.asset, lev: o.lev, usd: o.usd, qty, entry, tp: o.tp, sl: o.sl, liq: o.lev === 2 ? entry * (1 - LIQ_PCT) : undefined, openedAt: t, value: o.usd, pnl: 0 });

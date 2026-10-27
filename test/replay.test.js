@@ -93,4 +93,21 @@ s = R.replay(kvs([[(T0 - 10 * R.CANDLE) * 1000, buy(100)]]), candles([[10, 9, 10
 assert.strictEqual(s.history[0].kind, "invalid");
 assert.match(s.history[0].why, /velas/);
 
+// Wrong-side levels never open a position
+s = R.replay(kvs([[at(0), buy(100, { sl: 12 })]]), candles([[10, 9, 10], [11, 9, 10]]), NOW);
+assert.deepStrictEqual([s.history.map((h) => h.kind), s.balance, s.positions.length], [["invalid"], 1000, 0]);
+s = R.replay(kvs([[at(0), buy(100, { tp: 5 })]]), candles([[10, 9, 10], [11, 9, 10]]), NOW);
+assert.deepStrictEqual([s.history.map((h) => h.kind), s.balance], [["invalid"], 1000]);
+// Gap exit clamps to the candle range: sl 8 but the candle only traded 6-7
+s = R.replay(kvs([[at(0), buy(100, { sl: 8 })]]), candles([[10, 9, 10], [7, 6, 6.5]]), NOW);
+assert.deepStrictEqual([s.history[1].kind, s.history[1].price, s.balance], ["sl", 7, 970]);
+// Sell while the asset has no candle (other assets do) is invalid, not a crash
+{
+  const c = candles([[10, 9, 10], [10, 9, 10]]);
+  c.eth = [0, 1, 2].map((i) => ({ t: T0 + i * R.CANDLE, h: 5, l: 5, c: 5 }));
+  s = R.replay(kvs([[at(0), buy(100)], [at(2), JSON.stringify({ side: "sell", of: "o-" + at(0) })]]), c, NOW);
+  assert.deepStrictEqual(s.history.map((h) => h.kind), ["buy", "invalid"]);
+  assert.strictEqual(s.positions.length, 1);
+}
+
 console.log("replay ok");
