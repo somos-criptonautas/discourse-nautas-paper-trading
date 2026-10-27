@@ -45,4 +45,12 @@ const two = chartSVG(c, [{ price: 1, label: "SL", cls: "sl" }, { price: 0.5, lab
 const ys = [...two.matchAll(/<text class="label (?:sl|liq) off" x="4" y="([\d.]+)"/g)].map((m) => m[1]);
 assert.strictEqual(ys.length, 2);
 assert.notStrictEqual(ys[0], ys[1]); // stacked, not overlapping
+// 60 days of candles: at most 8 day marks
+const long = Array.from({ length: 360 }, (_, i) => ({ t: t0 + i * H, h: 11, l: 9, c: 10 }));
+assert.ok((chartSVG(long, [], { width: 640, height: 260 }).match(/text-anchor="middle"/g) || []).length <= 8);
+// yScale stretches the vertical range around its centre
+const axisY = (s) => [...s.matchAll(/<text class="axis" x="582"[^>]*>([\d.]+)</g)].map((m) => +m[1]);
+const a0 = axisY(chartSVG(c, [], { width: 640, height: 260 })), a2 = axisY(chartSVG(c, [], { width: 640, height: 260, yScale: { factor: 2, offset: 0 } }));
+assert.ok(a2[0] < a0[0] && a2[a2.length - 1] > a0[a0.length - 1]);
+for (const z of ["price", "time", "pan"]) assert.match(svg, new RegExp('class="zone ' + z + '"'));
 console.log("chart ok");

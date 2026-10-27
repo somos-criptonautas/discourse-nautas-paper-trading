@@ -117,5 +117,17 @@ function replay(keyValues, candles, now) {
   return st;
 }
 
-const api = { ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, mergeCandles, candleAt, parseOrder, replay };
+// Validates a buy before writing it. Messages are what the form shows; equality with ref is rejected.
+function checkOrder(o, ref, balance, keyCount) {
+  if (keyCount >= 100) return "llegamos al límite de claves guardadas: reiniciamos para seguir operando.";
+  if (!Number.isFinite(ref) || ref <= 0) return "sin precio de referencia todavía.";
+  if (!(o.usd >= MIN_USD)) return "el monto mínimo es 10 USD.";
+  if (o.usd > balance) return "el monto supera el saldo disponible.";
+  if (o.tp !== undefined && !(o.tp > ref)) return "el take-profit va por encima del precio actual.";
+  if (o.sl !== undefined && !(o.sl < ref)) return "el stop-loss va por debajo del precio actual.";
+  if (o.lev === 2 && o.sl !== undefined && o.sl <= ref * (1 - LIQ_PCT)) return "con 2x el stop-loss va por encima del precio de liquidación.";
+  return "";
+}
+
+const api = { checkOrder, ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, mergeCandles, candleAt, parseOrder, replay };
 if (typeof module !== "undefined") module.exports = api; else if (typeof window !== "undefined") window.Replay = api;

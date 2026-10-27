@@ -5,7 +5,7 @@
   const store = window.discourseArtifact;
   const fmt = (n) => n.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " USD";
   const when = (sec) => new Date(sec * 1000).toLocaleString("es", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  const ui = { user: null, candles: null, now: null, ranking: null, mine: [], state: null, asset: "btc", view: { count: 42, end: null } };
+  const ui = { user: null, candles: null, now: null, ranking: null, mine: [], state: null, asset: "btc", view: { count: 42, end: null, yScale: null } };
 
   function note(text) { $("note").textContent = text; $("note").hidden = !text; }
 
@@ -59,7 +59,7 @@
     $("perf").className = "pt-perf " + (s.perf >= 0 ? "up" : "down");
     renderChart(); prefill(); renderPositions(); renderPending(); renderHistory(); renderRanking();
     $("resets").textContent = s.resets ? "reiniciaste " + s.resets + (s.resets === 1 ? " vez." : " veces.") : "";
-    $("submit").disabled = !ui.user;
+    validate();
     $("reset").disabled = !ui.user;
   }
 
@@ -87,7 +87,7 @@
     const last = ui.now && ui.now[ui.asset];
     $("now-price").textContent = last ? "· " + C.fmtPrice(last) : "";
     $("submit").textContent = "comprar " + pair(ui.asset) + " al cierre de vela";
-    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, volume: true, last, stoch: C.stochastic(all).slice(from, end) }) || "<p class='pt-meta'>sin velas en este rango.</p>";
+    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, volume: true, last, yScale: ui.view.yScale, stoch: C.stochastic(all).slice(from, end) }) || "<p class='pt-meta'>sin velas en este rango.</p>";
   }
 
   // TP/SL start at the current price; a field the user touched is left alone
@@ -96,6 +96,20 @@
     for (const id of ["f-tp", "f-sl"]) if (p && !$(id).dataset.touched) $(id).value = Number(p.toPrecision(5));
   }
   function clearTouched() { for (const id of ["f-tp", "f-sl"]) { delete $(id).dataset.touched; $(id).value = ""; } prefill(); }
+
+  const refPrice = () => ui.now && ui.now[ui.asset];
+  function fields() {
+    const num = (id) => ($(id).value === "" ? undefined : +$(id).value);
+    return { asset: ui.asset, usd: $("f-usd").value === "" ? NaN : +$("f-usd").value, lev: +document.querySelector('input[name=lev]:checked').value, tp: num("f-tp"), sl: num("f-sl") };
+  }
+  // Live check: message in #err and submit disabled while the order is not valid
+  function validate() {
+    if (!ui.state) return;
+    const ref = refPrice(), f = fields(), msg = R.checkOrder(f, ref, ui.state.balance, ui.mine.length);
+    if (Number.isFinite(ref)) { $("f-tp").min = ref; $("f-sl").max = ref; $("f-sl").min = f.lev === 2 ? ref * (1 - R.LIQ_PCT) : ""; }
+    $("err").textContent = Number.isNaN(f.usd) ? "" : msg; $("err").hidden = !$("err").textContent;
+    $("submit").disabled = !ui.user || !!msg;
+  }
 
   const item = (main, right, small) => { const d = document.createElement("div"); d.className = "item"; d.innerHTML = "<span></span><span></span><small></small>"; d.children[0].textContent = main; d.children[1].textContent = right; d.children[2].textContent = small; return d; };
 
@@ -140,6 +154,36 @@
   $("sel-asset").innerHTML = opts;
   $("sel-asset").onchange = (e) => { ui.asset = e.target.value; clearTouched(); render(); };
   for (const id of ["f-tp", "f-sl"]) $(id).addEventListener("input", () => { $(id).dataset.touched = "1"; });
+  for (const id of ["f-usd", "f-tp", "f-sl"]) $(id).addEventListener("input", validate);
+  for (const r of document.querySelectorAll("input[name=lev]")) r.addEventListener("change", validate);
+
+  // Drag gestures on the chart zones; every move is computed from the values at pointerdown
+  let drag = null, lastKind = null; // pointer capture retargets click/dblclick to #chart, so lastKind remembers the zone from pointerdown
+  const chartEl = $("chart");
+  chartEl.addEventListener("pointerdown", (e) => {
+    const z = e.target.closest && e.target.closest(".zone"), svg = chartEl.querySelector("svg");
+    if (!z || !svg) return;
+    const n = closed().length, v = ui.view, all = closed(), end = v.end === null ? n : v.end, list = all.slice(Math.max(0, end - v.count), end);
+    const k = svg.clientWidth / 640, span = (Math.max(...list.map((c) => c.h)) - Math.min(...list.map((c) => c.l))) * 1.08;
+    drag = { kind: z.classList.contains("price") ? "price" : z.classList.contains("time") ? "time" : "pan", x: e.clientX, y: e.clientY, count: v.count, end, factor: v.yScale ? v.yScale.factor : 1, offset: v.yScale ? v.yScale.offset : 0, cwPx: ((640 - 64) / v.count) * k, plotPx: (260 - 30) * k, span };
+    lastKind = drag.kind;
+    chartEl.setPointerCapture(e.pointerId);
+  });
+  chartEl.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y, v = ui.view;
+    if (drag.kind === "pan") {
+      if (v.yScale) v.yScale = { factor: drag.factor, offset: drag.offset + (dy / drag.plotPx) * drag.span * drag.factor };
+      setView(drag.count, drag.end - dx / drag.cwPx);
+    } else if (drag.kind === "time") setView(drag.count * Math.pow(1.1, -dx / 40), drag.end);
+    else { v.yScale = { factor: Math.min(20, Math.max(0.1, drag.factor * Math.pow(1.1, dy / 40))), offset: drag.offset }; render(); }
+  });
+  const endDrag = () => { drag = null; };
+  chartEl.addEventListener("pointerup", endDrag);
+  chartEl.addEventListener("pointercancel", endDrag);
+  chartEl.addEventListener("dblclick", () => {
+    if (lastKind === "price") { ui.view.yScale = null; render(); } else if (lastKind === "time") setView(180, null);
+  });
   $("sel-range").onchange = (e) => { if (e.target.value) setView(+e.target.value, null); };
   let lastWheel = 0;
   $("chart").addEventListener("wheel", (e) => { e.preventDefault(); if (Math.abs(e.deltaY) < 20 || e.timeStamp - lastWheel < 150) return; lastWheel = e.timeStamp; zoom(e.deltaY > 0 ? 2 : 0.5); }, { passive: false });

@@ -112,4 +112,16 @@ assert.deepStrictEqual([s.history[1].kind, s.history[1].price, s.balance], ["sl"
   assert.strictEqual(s.positions.length, 1);
 }
 
+// checkOrder: live form validation (equality with the reference price is rejected)
+assert.strictEqual(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, 10, 1000, 3), "");
+assert.match(R.checkOrder({ asset: "btc", usd: 5, lev: 1 }, 10, 1000, 3), /10 USD/);
+assert.match(R.checkOrder({ asset: "btc", usd: 1001, lev: 1 }, 10, 1000, 3), /saldo/);
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, tp: 9 }, 10, 1000, 3), /take-profit/);
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, sl: 11 }, 10, 1000, 3), /stop-loss/);
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 2, sl: 5 }, 10, 1000, 3), /liquidación/); // liq = 5.5
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, 10, 1000, 100), /claves/);
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, null, 1000, 3), /precio/);
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, tp: 10 }, 10, 1000, 3), /take-profit/);
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, sl: 10 }, 10, 1000, 3), /stop-loss/);
+
 console.log("replay ok");

@@ -19,6 +19,8 @@ function chartSVG(candles, lines, opts) {
   const ys = candles.flatMap((k) => [k.h, k.l]);
   let lo = Math.min(...ys), hi = Math.max(...ys);
   const m = (hi - lo || hi || 1) * 0.04; lo -= m; hi += m;
+  if (opts.yScale) { const c = (lo + hi) / 2, h = ((hi - lo) / 2) * opts.yScale.factor; lo = c - h + opts.yScale.offset; hi = c + h + opts.yScale.offset; }
+  const dayStep = Math.max(1, Math.ceil(candles.length / 6 / 8)); // at most ~8 day labels
   const y = (p) => padT + ((hi - p) / (hi - lo)) * (H - padT - padB);
   const cw = (W - padR) / candles.length, bw = Math.max(1, cw * 0.6);
   const esc = (s) => String(s).replace(/[<&>"]/g, (ch) => ({ "<": "&lt;", "&": "&amp;", ">": "&gt;", '"': "&quot;" }[ch]));
@@ -27,22 +29,25 @@ function chartSVG(candles, lines, opts) {
     const p = lo + ((hi - lo) * i) / 7, yy = y(p);
     out += `<line class="grid" x1="0" x2="${W - padR}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/><text class="axis" x="${W - padR + 6}" y="${(yy + 4).toFixed(1)}">${fmtPrice(p)}</text>`;
   }
-  let lastDay = "";
+  out += `<clipPath id="pc"><rect x="0" y="0" width="${W - padR}" height="${H - padB}"/></clipPath><g clip-path="url(#pc)">`;
   candles.forEach((k, i) => {
     const x = i * cw + cw / 2, open = i ? candles[i - 1].c : k.l;
     const cls = k.c >= open ? "up" : "down";
     const top = y(Math.max(open, k.c)), bot = y(Math.min(open, k.c));
     out += `<g class="candle ${cls}"><line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y(k.h).toFixed(1)}" y2="${y(k.l).toFixed(1)}"/>`;
     out += `<rect x="${(x - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, bot - top).toFixed(1)}"/></g>`;
+  });
+  out += "</g>";
+  candles.forEach((k, i) => {
     const d = new Date(k.t * 1000), day = String(d.getUTCDate()).padStart(2, "0") + "/" + String(d.getUTCMonth() + 1).padStart(2, "0");
-    if (day !== lastDay && d.getUTCHours() === 0) { out += `<text class="axis" x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle">${day}</text>`; lastDay = day; }
+    if (d.getUTCHours() === 0 && Math.floor(k.t / 86400) % dayStep === 0) out += `<text class="axis" x="${(i * cw + cw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${day}</text>`;
   });
   const cl = candles.flatMap((k) => [k.h, k.l]), cLo = Math.min(...cl), cHi = Math.max(...cl);
   const pinned = { up: 0, down: 0 }; // labels already stacked at each edge
   for (const l of lines) {
     // out-of-range lines are pinned to the edge instead of stretching the scale
     const off = l.price < cLo ? "↓ " : l.price > cHi ? "↑ " : "";
-    const yy = (off ? (l.price < cLo ? H - padB : padT) : y(l.price)).toFixed(1);
+    const yy = (off ? (l.price < cLo ? H - padB : padT) : Math.min(H - padB, Math.max(padT, y(l.price)))).toFixed(1);
     out += `<line class="line ${esc(l.cls)}${off ? " off" : ""}" x1="0" x2="${W - padR}" y1="${yy}" y2="${yy}"/><text class="label ${esc(l.cls)}${off ? " off" : ""}" x="4" y="${(+yy + (off && l.price > cHi ? 12 + 12 * pinned.up++ : -4 - (off ? 12 * pinned.down++ : 0))).toFixed(1)}">${off}${esc(l.label)} ${fmtPrice(l.price)}</text>`;
   }
   if (Number.isFinite(opts.last)) {
@@ -63,6 +68,8 @@ function chartSVG(candles, lines, opts) {
     for (const v of [20, 80]) out += `<line class="grid" x1="0" x2="${W - padR}" y1="${sy(v)}" y2="${sy(v)}" stroke-dasharray="3 3"/><text class="axis" x="${W - padR + 6}" y="${(+sy(v) + 4).toFixed(1)}">${v}</text>`;
     out += `<polyline class="stoch k" points="${pts("k")}"/><polyline class="stoch d" points="${pts("d")}"/></g>`;
   }
+  // transparent gesture zones, last so they receive the events
+  out += `<rect class="zone price" x="${W - padR}" y="0" width="${padR}" height="${H - padB}" fill="transparent"/><rect class="zone time" x="0" y="${H - padB}" width="${W - padR}" height="${padB}" fill="transparent"/><rect class="zone pan" x="0" y="0" width="${W - padR}" height="${H - padB}" fill="transparent"/>`;
   return out + "</svg>";
 }
 if (typeof module !== "undefined") module.exports = { chartSVG, fmtPrice, stochastic }; else if (typeof window !== "undefined") window.Chart = { chartSVG, fmtPrice, stochastic };

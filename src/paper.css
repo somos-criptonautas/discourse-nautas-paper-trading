@@ -81,3 +81,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .pt { padding: 10px 2px; gap: 10px; }
   .pt-card { padding: 12px; }
 }
+.pt-chart svg { touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.pt-chart .zone.price { cursor: ns-resize; }
+.pt-chart .zone.time { cursor: ew-resize; }
+.pt-chart .zone.pan { cursor: grab; }
