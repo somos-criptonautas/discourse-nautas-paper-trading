@@ -38,11 +38,12 @@ function chartSVG(candles, lines, opts) {
     if (day !== lastDay && d.getUTCHours() === 0) { out += `<text class="axis" x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle">${day}</text>`; lastDay = day; }
   });
   const cl = candles.flatMap((k) => [k.h, k.l]), cLo = Math.min(...cl), cHi = Math.max(...cl);
+  const pinned = { up: 0, down: 0 }; // labels already stacked at each edge
   for (const l of lines) {
     // out-of-range lines are pinned to the edge instead of stretching the scale
     const off = l.price < cLo ? "↓ " : l.price > cHi ? "↑ " : "";
     const yy = (off ? (l.price < cLo ? H - padB : padT) : y(l.price)).toFixed(1);
-    out += `<line class="line ${esc(l.cls)}${off ? " off" : ""}" x1="0" x2="${W - padR}" y1="${yy}" y2="${yy}"/><text class="label ${esc(l.cls)}${off ? " off" : ""}" x="4" y="${(+yy + (off && l.price > cHi ? 12 : -4)).toFixed(1)}">${off}${esc(l.label)} ${fmtPrice(l.price)}</text>`;
+    out += `<line class="line ${esc(l.cls)}${off ? " off" : ""}" x1="0" x2="${W - padR}" y1="${yy}" y2="${yy}"/><text class="label ${esc(l.cls)}${off ? " off" : ""}" x="4" y="${(+yy + (off && l.price > cHi ? 12 + 12 * pinned.up++ : -4 - (off ? 12 * pinned.down++ : 0))).toFixed(1)}">${off}${esc(l.label)} ${fmtPrice(l.price)}</text>`;
   }
   if (Number.isFinite(opts.last)) {
     // pinned to the edge when outside the candle range, like the other lines
@@ -51,9 +52,9 @@ function chartSVG(candles, lines, opts) {
   }
   let top = H;
   if (opts.volume) {
-    const vmax = Math.max(...candles.map((k) => k.v || 0)) || 1;
+    const vmax = Math.max(...candles.map((k) => Math.max(0, k.v || 0))) || 1;
     out += `<g transform="translate(0,${top})"><text class="pane" x="4" y="12">volumen</text>`;
-    candles.forEach((k, i) => { const h = ((k.v || 0) / vmax) * (VH - 18); out += `<rect class="vol" x="${(i * cw + cw / 2 - bw / 2).toFixed(1)}" y="${(VH - 4 - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"/>`; });
+    candles.forEach((k, i) => { const h = (Math.max(0, k.v || 0) / vmax) * (VH - 18); out += `<rect class="vol" x="${(i * cw + cw / 2 - bw / 2).toFixed(1)}" y="${(VH - 4 - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"/>`; });
     out += "</g>"; top += VH;
   }
   if (opts.stoch) {

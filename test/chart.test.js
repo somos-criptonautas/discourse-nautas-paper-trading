@@ -41,4 +41,8 @@ assert.match(lastSvg, /class="label last"/);
 assert.match(lastSvg, />10\.5</);
 const ticks = (chartSVG(c, [], { width: 640, height: 260 }).match(/<text class="axis" x="(?:582)"/g) || []).length;
 assert.strictEqual(ticks, 8);
+const two = chartSVG(c, [{ price: 1, label: "SL", cls: "sl" }, { price: 0.5, label: "liq", cls: "liq" }], { width: 640, height: 260 });
+const ys = [...two.matchAll(/<text class="label (?:sl|liq) off" x="4" y="([\d.]+)"/g)].map((m) => m[1]);
+assert.strictEqual(ys.length, 2);
+assert.notStrictEqual(ys[0], ys[1]); // stacked, not overlapping
 console.log("chart ok");

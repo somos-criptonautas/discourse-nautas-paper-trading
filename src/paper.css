@@ -48,7 +48,7 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-chart .label { font-size: 11px; }
 .pt-chart .line.off { stroke-dasharray: 2 2; }
 .pt-chart .label.off { font-weight: 600; }
-.vol rect { fill: var(--muted); opacity: .5; }
+.pt-chart rect.vol { fill: var(--muted); opacity: .5; }
 .pt-chart .pane { fill: var(--muted); font-size: 11px; }
 .pt-chart .line.last { stroke: var(--accent); }
 .pt-chart rect.label.last { fill: var(--accent); }

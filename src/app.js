@@ -93,7 +93,7 @@
   // TP/SL start at the current price; a field the user touched is left alone
   function prefill() {
     const p = ui.now && ui.now[ui.asset];
-    for (const id of ["f-tp", "f-sl"]) if (p && !$(id).dataset.touched) $(id).value = p;
+    for (const id of ["f-tp", "f-sl"]) if (p && !$(id).dataset.touched) $(id).value = Number(p.toPrecision(5));
   }
   function clearTouched() { for (const id of ["f-tp", "f-sl"]) { delete $(id).dataset.touched; $(id).value = ""; } prefill(); }
 
