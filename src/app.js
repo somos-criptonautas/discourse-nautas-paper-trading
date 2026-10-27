@@ -5,7 +5,7 @@
   const store = window.discourseArtifact;
   const fmt = (n) => n.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " USD";
   const when = (sec) => new Date(sec * 1000).toLocaleString("es", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  const ui = { user: null, candles: null, now: null, ranking: null, mine: [], state: null, asset: "btc", range: 4 };
+  const ui = { user: null, candles: null, now: null, ranking: null, mine: [], state: null, asset: "btc", view: { count: 42, end: null } };
 
   function note(text) { $("note").textContent = text; $("note").hidden = !text; }
 
@@ -53,6 +53,8 @@
     $("meta").textContent = "Último cierre de vela: " + when(lastClose);
     $("balance").textContent = fmt(s.balance);
     $("equity").textContent = fmt(s.equity);
+    $("avail").textContent = "Disponible: " + fmt(s.balance);
+    $("f-usd").max = Math.floor(s.balance);
     $("perf").textContent = (s.perf >= 0 ? "+" : "") + s.perf + "%";
     $("perf").className = "pt-perf " + (s.perf >= 0 ? "up" : "down");
     renderChart(); renderPositions(); renderPending(); renderHistory(); renderRanking();
@@ -61,21 +63,28 @@
     $("reset").disabled = !ui.user;
   }
 
+  const pair = (a) => a.toUpperCase() + "/USDT";
+  function closed() { return ui.candles[ui.asset].filter((k) => k.t + R.CANDLE <= nowSec()); }
+  // Zoom/pan state: count visible candles, end = index after the last visible one (null = latest)
+  function setView(count, end) {
+    const n = closed().length, v = ui.view;
+    v.count = Math.max(Math.min(12, n), Math.min(n, Math.round(count)));
+    v.end = end === null || end >= n ? null : Math.max(v.count, end);
+    render();
+  }
+  function zoom(f) { setView(ui.view.count * f, ui.view.end); }
+  function pan(dir) { const n = closed().length, e = (ui.view.end === null ? n : ui.view.end) + dir * Math.max(1, Math.round(ui.view.count / 4)); setView(ui.view.count, e); }
+
   function renderChart() {
-    const tabs = $("assets"); tabs.innerHTML = "";
-    R.ASSETS.forEach((a) => {
-      const b = document.createElement("button"); b.type = "button"; b.role = "tab"; b.textContent = a.toUpperCase();
-      b.setAttribute("aria-selected", String(a === ui.asset)); b.onclick = () => { ui.asset = a; $("f-asset").value = a; render(); };
-      tabs.appendChild(b);
-    });
-    [...$("ranges").children].forEach((b) => { b.setAttribute("aria-pressed", String(+b.dataset.range === ui.range)); b.onclick = () => { ui.range = +b.dataset.range; render(); }; });
-    const from = nowSec() - ui.range * 7 * 86400;
-    const list = ui.candles[ui.asset].filter((k) => k.t >= from && k.t + R.CANDLE <= nowSec());
+    $("sel-asset").value = ui.asset;
+    $("sel-range").value = [42, 180, 1092].includes(ui.view.count) && ui.view.end === null ? ui.view.count : "";
+    const all = closed(), end = ui.view.end === null ? all.length : ui.view.end;
+    const list = all.slice(Math.max(0, end - ui.view.count), end);
     const lines = ui.state.positions.filter((p) => p.asset === ui.asset).flatMap((p) => [
       { price: p.entry, label: "Entrada", cls: "entry" },
       p.tp && { price: p.tp, label: "TP", cls: "tp" }, p.sl && { price: p.sl, label: "SL", cls: "sl" }, p.liq && { price: p.liq, label: "Liq", cls: "liq" },
     ].filter(Boolean));
-    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260 }) || "<p class='pt-meta'>Sin velas en este rango.</p>";
+    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, stoch: true }) || "<p class='pt-meta'>Sin velas en este rango.</p>";
   }
 
   const item = (main, right, small) => { const d = document.createElement("div"); d.className = "item"; d.innerHTML = "<span></span><span></span><small></small>"; d.children[0].textContent = main; d.children[1].textContent = right; d.children[2].textContent = small; return d; };
@@ -117,7 +126,13 @@
   async function order(ev) { ev.preventDefault(); /* Task 6 */ }
   async function reset() { /* Task 6 */ }
 
-  $("f-asset").innerHTML = R.ASSETS.map((a) => `<option value="${a}">${a.toUpperCase()}</option>`).join("");
+  const opts = R.ASSETS.map((a) => `<option value="${a}">${pair(a)}</option>`).join("");
+  $("f-asset").innerHTML = opts; $("sel-asset").innerHTML = opts;
+  $("sel-asset").onchange = (e) => { ui.asset = e.target.value; $("f-asset").value = ui.asset; render(); };
+  $("f-asset").onchange = (e) => { ui.asset = e.target.value; render(); };
+  $("sel-range").onchange = (e) => { if (e.target.value) setView(+e.target.value, null); };
+  $("chart").addEventListener("wheel", (e) => { e.preventDefault(); zoom(e.deltaY > 0 ? 2 : 0.5); }, { passive: false });
+  document.querySelector(".pt-zoom").onclick = (e) => { const z = e.target.dataset && e.target.dataset.z; if (z === "in") zoom(0.5); else if (z === "out") zoom(2); else if (z) pan(z === "fwd" ? 1 : -1); };
   $("order").onsubmit = order;
   $("reset").onclick = reset;
   load().then(render);

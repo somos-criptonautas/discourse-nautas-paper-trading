@@ -2,13 +2,13 @@
    El foro cambia de esquema con prefers-color-scheme; el artifact hace lo mismo. */
 :root {
   --bg: #181719; --surface: #282529; --border: #353535; --text: #f1f1f1; --muted: #9d9d9d;
-  --accent: #c89dff; --on-accent: #181719; --good: #6dc08f; --bad: #ff8da5; --track: #353535;
+  --accent: #c89dff; --on-accent: #181719; --good: #6dc08f; --bad: #ff8da5; --down: #8b1e2d; --track: #353535;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #ffffff; --surface: #f8f8f8; --border: #e8e8e8; --text: #1a1a1a; --muted: #6e6e6e;
-    --accent: #5814ea; --on-accent: #ffffff; --good: #1f7a5c; --bad: #9e1b27; --track: #e8e8e8;
+    --accent: #5814ea; --on-accent: #ffffff; --good: #1f7a5c; --bad: #9e1b27; --down: #7a1420; --track: #e8e8e8;
     color-scheme: light;
   }
 }
@@ -29,16 +29,23 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-row span:first-child { color: var(--muted); min-width: 70px; }
 .pt-row strong { font-size: 20px; }
 .pt-perf.up { color: var(--good); } .pt-perf.down { color: var(--bad); }
-.pt-tabs, .pt-ranges, .pt-quick { display: flex; flex-wrap: wrap; gap: 6px; }
-.pt-tabs button, .pt-ranges button, .pt-quick button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--text); border: 1px solid var(--border); }
-.pt-tabs button[aria-selected="true"], .pt-ranges button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.pt-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pt-bar select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.pt-zoom { display: flex; gap: 6px; margin-left: auto; }
+.pt-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-zoom button, .pt-quick button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--text); border: 1px solid var(--border); }
 .pt-chart svg { display: block; }
 .pt-chart .grid { stroke: var(--border); }
 .pt-chart .axis { fill: var(--muted); font-size: 11px; }
 .pt-chart .candle.up line, .pt-chart .candle.up rect { stroke: var(--good); fill: var(--good); }
-.pt-chart .candle.down line, .pt-chart .candle.down rect { stroke: var(--bad); fill: var(--bad); }
+.pt-chart .candle.down line, .pt-chart .candle.down rect { stroke: var(--down); fill: var(--down); }
 .pt-chart .line { stroke-dasharray: 4 3; stroke-width: 1.2; }
 .pt-chart .label { font-size: 11px; }
+.pt-chart .line.off { stroke-dasharray: 2 2; }
+.pt-chart .label { font-weight: 600; }
+.pt-chart .stoch { fill: none; stroke-width: 1.3; }
+.pt-chart .stoch.k { stroke: var(--accent); }
+.pt-chart .stoch.d { stroke: var(--muted); }
 .pt-chart .entry { stroke: var(--accent); fill: var(--accent); }
 .pt-chart .tp { stroke: var(--good); fill: var(--good); }
 .pt-chart .sl, .pt-chart .liq { stroke: var(--bad); fill: var(--bad); }

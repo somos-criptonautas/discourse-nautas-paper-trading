@@ -9,8 +9,11 @@
     <div class="pt-row"><span>Cartera</span><strong id="equity">—</strong><span class="pt-perf" id="perf"></span></div>
   </section>
   <section class="pt-card">
-    <div class="pt-tabs" id="assets" role="tablist"></div>
-    <div class="pt-ranges" id="ranges"><button type="button" data-range="1">1 semana</button><button type="button" data-range="4">1 mes</button><button type="button" data-range="26">6 meses</button></div>
+    <div class="pt-bar">
+      <select id="sel-asset" aria-label="Par"></select>
+      <select id="sel-range" aria-label="Rango"><option value="42">1 semana</option><option value="180">1 mes</option><option value="1092">6 meses</option></select>
+      <span class="pt-zoom"><button type="button" data-z="back" aria-label="Mover atrás">‹</button><button type="button" data-z="in" aria-label="Acercar">+</button><button type="button" data-z="out" aria-label="Alejar">−</button><button type="button" data-z="fwd" aria-label="Mover adelante">›</button></span>
+    </div>
     <div class="pt-chart" id="chart"></div>
   </section>
   <section class="pt-card">
@@ -21,7 +24,7 @@
     <h2>Nueva orden</h2>
     <form id="order" class="pt-form">
       <label>Activo <select id="f-asset"></select></label>
-      <label>Monto en USD <input id="f-usd" type="number" min="10" step="1" inputmode="decimal" required></label>
+      <label>Monto en USD <input id="f-usd" type="number" min="10" step="1" inputmode="decimal" required><span class="pt-hint" id="avail"></span></label>
       <div class="pt-quick"><button type="button" data-pct="2">2%</button><button type="button" data-pct="5">5%</button><button type="button" data-pct="10">10%</button></div>
       <fieldset class="pt-lev"><legend>Apalancamiento</legend><label><input type="radio" name="lev" value="1" checked> 1x</label><label><input type="radio" name="lev" value="2"> 2x</label></fieldset>
       <label>Take-profit <input id="f-tp" type="number" step="any" inputmode="decimal" placeholder="opcional"></label>
