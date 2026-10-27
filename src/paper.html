@@ -1,47 +1,47 @@
 <main class="pt">
   <header class="pt-head">
-    <h1>Paper trading · swing en 4h</h1>
+    <h1>paper trading · swing en 4h</h1>
     <p class="pt-meta" id="meta" aria-live="polite"></p>
   </header>
   <p class="pt-note" id="note" hidden></p>
   <section class="pt-card">
-    <div class="pt-row"><span>Saldo</span><strong id="balance">—</strong></div>
-    <div class="pt-row"><span>Cartera</span><strong id="equity">—</strong><span class="pt-perf" id="perf"></span></div>
+    <div class="pt-row"><span>saldo</span><strong id="balance">—</strong></div>
+    <div class="pt-row"><span>cartera</span><strong id="equity">—</strong><span class="pt-perf" id="perf"></span></div>
+  </section>
+  <section class="pt-card">
+    <h2>posiciones abiertas</h2>
+    <div id="positions" class="pt-list"></div>
   </section>
   <section class="pt-card">
     <div class="pt-bar">
-      <select id="sel-asset" aria-label="Par"></select>
-      <select id="sel-range" aria-label="Rango"><option value="42">1 semana</option><option value="180">1 mes</option><option value="1092">6 meses</option></select>
-      <span class="pt-zoom"><button type="button" data-z="back" aria-label="Mover atrás">‹</button><button type="button" data-z="in" aria-label="Acercar">+</button><button type="button" data-z="out" aria-label="Alejar">−</button><button type="button" data-z="fwd" aria-label="Mover adelante">›</button></span>
+      <select id="sel-asset" aria-label="par"></select>
+      <select id="sel-range" aria-label="rango"><option value="42">1 semana</option><option value="180">1 mes</option><option value="1092">6 meses</option><option value="custom" disabled hidden>personalizado</option></select>
+      <span class="pt-zoom"><button type="button" data-z="back" aria-label="mover atrás">‹</button><button type="button" data-z="in" aria-label="acercar">+</button><button type="button" data-z="out" aria-label="alejar">−</button><button type="button" data-z="fwd" aria-label="mover adelante">›</button></span>
     </div>
     <div class="pt-chart" id="chart"></div>
   </section>
   <section class="pt-card">
-    <h2>Posiciones abiertas</h2>
-    <div id="positions" class="pt-list"></div>
-  </section>
-  <section class="pt-card">
-    <h2>Nueva orden</h2>
+    <h2>nueva orden</h2>
     <form id="order" class="pt-form">
-      <label>Activo <select id="f-asset"></select></label>
-      <label>Monto en USD <input id="f-usd" type="number" min="10" step="1" inputmode="decimal" required><span class="pt-hint" id="avail"></span></label>
+      <label>par en cripto <select id="f-asset"></select></label>
+      <label>monto en USD <input id="f-usd" type="number" min="10" step="1" inputmode="decimal" required><span class="pt-hint" id="avail"></span></label>
       <div class="pt-quick"><button type="button" data-pct="2">2%</button><button type="button" data-pct="5">5%</button><button type="button" data-pct="10">10%</button></div>
-      <fieldset class="pt-lev"><legend>Apalancamiento</legend><label><input type="radio" name="lev" value="1" checked> 1x</label><label><input type="radio" name="lev" value="2"> 2x</label></fieldset>
-      <label>Take-profit <input id="f-tp" type="number" step="any" inputmode="decimal" placeholder="opcional"></label>
-      <label>Stop-loss <input id="f-sl" type="number" step="any" inputmode="decimal" placeholder="opcional"></label>
+      <fieldset class="pt-lev"><legend>apalancamiento</legend><label><input type="radio" name="lev" value="1" checked> 1x</label><label><input type="radio" name="lev" value="2"> 2x</label></fieldset>
+      <label>take-profit <input id="f-tp" type="number" step="any" inputmode="decimal" placeholder="opcional"></label>
+      <label>stop-loss <input id="f-sl" type="number" step="any" inputmode="decimal" placeholder="opcional"></label>
       <p class="pt-hint" id="hint"></p>
       <p class="pt-err" id="err" role="alert" hidden></p>
-      <button type="submit" class="pt-btn pt-primary" id="submit">Comprar al cierre de la vela</button>
+      <button type="submit" class="pt-btn pt-primary" id="submit">comprar al cierre de la vela</button>
     </form>
   </section>
   <section class="pt-card" id="pending-card" hidden>
-    <h2>Pendientes de cierre de vela</h2>
+    <h2>pendientes de cierre de vela</h2>
     <div id="pending" class="pt-list"></div>
   </section>
-  <details class="pt-card"><summary>Historial</summary><div id="history" class="pt-list"></div></details>
-  <details class="pt-card" open><summary>Ranking de la comunidad</summary><div id="ranking" class="pt-list"></div></details>
+  <details class="pt-card"><summary>historial</summary><div id="history" class="pt-list"></div></details>
+  <details class="pt-card" open><summary>ranking de la comunidad</summary><div id="ranking" class="pt-list"></div></details>
   <section class="pt-actions">
-    <button type="button" class="pt-btn" id="reset">Reiniciar con 1.000 USD</button>
+    <button type="button" class="pt-btn" id="reset">reiniciar con 1.000 USD</button>
     <p class="pt-meta" id="resets"></p>
   </section>
 </main>

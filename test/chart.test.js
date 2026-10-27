@@ -3,7 +3,7 @@ const assert = require("assert");
 const { chartSVG, stochastic } = require("../src/chart.js");
 const t0 = Date.UTC(2026, 9, 26) / 1000, H = 14400;
 const c = [{ t: t0, h: 10, l: 9, c: 9.5 }, { t: t0 + H, h: 11, l: 9.5, c: 10.5 }, { t: t0 + 6 * H, h: 12, l: 10, c: 11 }];
-const svg = chartSVG(c, [{ price: 9.5, label: "Entrada", cls: "entry" }, { price: 12.5, label: "TP", cls: "tp" }], { width: 640, height: 260 });
+const svg = chartSVG(c, [{ price: 9.5, label: "entrada", cls: "entry" }, { price: 12.5, label: "TP", cls: "tp" }], { width: 640, height: 260 });
 assert.match(svg, /^<svg[^>]*viewBox="0 0 640 260"/);
 assert.strictEqual((svg.match(/class="candle up"/g) || []).length, 3); // 9.5 ≥ 9 (primera: open = l), 10.5 ≥ 9.5, 11 ≥ 10.5
 assert.strictEqual((svg.match(/class="candle down"/g) || []).length, 0);
@@ -24,8 +24,9 @@ const pinned = chartSVG(c, [{ price: 1, label: "Liq", cls: "liq" }], { width: 64
 assert.match(pinned, /class="line liq off"/);
 assert.match(pinned, />↓ Liq 1</);
 assert.match(pinned, /class="axis"[^>]*>8\.88</); // lo = 9 - 4% margin, not near 1
-const withStoch = chartSVG(rise, [], { width: 640, height: 260, stoch: true });
+const withStoch = chartSVG(rise.slice(-12), [], { width: 640, height: 260, stoch: stochastic(rise).slice(-12) }); // zoomed: 12 candles, stochastic from the full series
 assert.match(withStoch, /viewBox="0 0 640 340"/);
 assert.match(withStoch, /class="stoch k"/);
 assert.match(withStoch, /class="stoch d"/);
+assert.match(withStoch, /class="stoch k" points="[^"]+,/); // not empty when zoomed
 console.log("chart ok");

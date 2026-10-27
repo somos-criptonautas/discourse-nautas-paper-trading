@@ -37,28 +37,28 @@
       const me = sys.users.find((u) => u.username === ui.user);
       ui.mine = me ? sys.key_values.filter((k) => k.user_id === me.id) : [];
     } catch (e) {
-      note("No pudimos leer los precios. Recarga la página en un momento.");
+      note("no pudimos leer los precios. recarga la página en un momento.");
     }
-    if (!ui.user) note("Inicia sesión en el foro para operar. Sin sesión se ven el gráfico y el ranking.");
+    if (!ui.user) note("inicia sesión en el foro para operar. sin sesión se ven el gráfico y el ranking.");
   }
 
   function nowSec() { return Math.floor(Date.now() / 1000); }
 
   function render() {
     const ok = ui.candles && R.ASSETS.some((a) => ui.candles[a].length);
-    if (!ok) { $("meta").textContent = "Sin datos de precios"; $("submit").disabled = true; return; }
+    if (!ok) { $("meta").textContent = "sin datos de precios"; $("submit").disabled = true; return; }
     ui.state = R.replay(ui.mine, ui.candles, nowSec());
     const s = ui.state;
     const lastClose = Math.max(...R.ASSETS.map((a) => { const l = ui.candles[a].filter((k) => k.t + R.CANDLE <= nowSec()); return l.length ? l[l.length - 1].t + R.CANDLE : 0; }));
-    $("meta").textContent = "Último cierre de vela: " + when(lastClose);
+    $("meta").textContent = "último cierre de vela: " + when(lastClose);
     $("balance").textContent = fmt(s.balance);
     $("equity").textContent = fmt(s.equity);
-    $("avail").textContent = "Disponible: " + fmt(s.balance);
+    $("avail").textContent = "disponible: " + fmt(s.balance);
     $("f-usd").max = Math.floor(s.balance);
     $("perf").textContent = (s.perf >= 0 ? "+" : "") + s.perf + "%";
     $("perf").className = "pt-perf " + (s.perf >= 0 ? "up" : "down");
     renderChart(); renderPositions(); renderPending(); renderHistory(); renderRanking();
-    $("resets").textContent = s.resets ? "Reiniciaste " + s.resets + (s.resets === 1 ? " vez." : " veces.") : "";
+    $("resets").textContent = s.resets ? "reiniciaste " + s.resets + (s.resets === 1 ? " vez." : " veces.") : "";
     $("submit").disabled = !ui.user;
     $("reset").disabled = !ui.user;
   }
@@ -77,26 +77,26 @@
 
   function renderChart() {
     $("sel-asset").value = ui.asset;
-    $("sel-range").value = [42, 180, 1092].includes(ui.view.count) && ui.view.end === null ? ui.view.count : "";
+    $("sel-range").value = [42, 180, 1092].includes(ui.view.count) && ui.view.end === null ? ui.view.count : "custom";
     const all = closed(), end = ui.view.end === null ? all.length : ui.view.end;
-    const list = all.slice(Math.max(0, end - ui.view.count), end);
+    const from = Math.max(0, end - ui.view.count), list = all.slice(from, end);
     const lines = ui.state.positions.filter((p) => p.asset === ui.asset).flatMap((p) => [
-      { price: p.entry, label: "Entrada", cls: "entry" },
-      p.tp && { price: p.tp, label: "TP", cls: "tp" }, p.sl && { price: p.sl, label: "SL", cls: "sl" }, p.liq && { price: p.liq, label: "Liq", cls: "liq" },
+      { price: p.entry, label: "entrada", cls: "entry" },
+      p.tp && { price: p.tp, label: "TP", cls: "tp" }, p.sl && { price: p.sl, label: "SL", cls: "sl" }, p.liq && { price: p.liq, label: "liq", cls: "liq" },
     ].filter(Boolean));
-    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, stoch: true }) || "<p class='pt-meta'>Sin velas en este rango.</p>";
+    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, stoch: C.stochastic(all).slice(from, end) }) || "<p class='pt-meta'>sin velas en este rango.</p>";
   }
 
   const item = (main, right, small) => { const d = document.createElement("div"); d.className = "item"; d.innerHTML = "<span></span><span></span><small></small>"; d.children[0].textContent = main; d.children[1].textContent = right; d.children[2].textContent = small; return d; };
 
   function renderPositions() {
     const box = $("positions"); box.innerHTML = "";
-    if (!ui.state.positions.length) { box.appendChild(item("Sin posiciones abiertas", "", "")); return; }
+    if (!ui.state.positions.length) { box.appendChild(item("sin posiciones abiertas", "", "")); return; }
     for (const p of ui.state.positions) {
-      const d = item(p.asset.toUpperCase() + " " + p.lev + "x · " + fmt(p.usd), (p.pnl >= 0 ? "+" : "") + fmt(p.pnl),
-        "Entrada " + C.fmtPrice(p.entry) + (p.tp ? " · TP " + C.fmtPrice(p.tp) : "") + (p.sl ? " · SL " + C.fmtPrice(p.sl) : "") + (p.liq ? " · Liq " + C.fmtPrice(p.liq) : "") + " · " + when(p.openedAt + R.CANDLE));
+      const d = item(pair(p.asset) + " " + p.lev + "x · " + fmt(p.usd), (p.pnl >= 0 ? "+" : "") + fmt(p.pnl),
+        "entrada " + C.fmtPrice(p.entry) + (p.tp ? " · TP " + C.fmtPrice(p.tp) : "") + (p.sl ? " · SL " + C.fmtPrice(p.sl) : "") + (p.liq ? " · liq " + C.fmtPrice(p.liq) : "") + " · " + when(p.openedAt + R.CANDLE));
       d.children[1].className = p.pnl >= 0 ? "pt-perf up" : "pt-perf down";
-      if (ui.user) { const b = document.createElement("button"); b.type = "button"; b.className = "close"; b.textContent = "Cerrar al cierre de vela"; b.onclick = () => close(p); d.appendChild(b); }
+      if (ui.user) { const b = document.createElement("button"); b.type = "button"; b.className = "close"; b.textContent = "cerrar al cierre de vela"; b.onclick = () => close(p); d.appendChild(b); }
       box.appendChild(d);
     }
   }
@@ -104,21 +104,21 @@
   function renderPending() {
     const box = $("pending"); box.innerHTML = "";
     $("pending-card").hidden = !ui.state.pending.length;
-    for (const o of ui.state.pending) box.appendChild(item(o.side === "buy" ? "Compra " + o.asset.toUpperCase() + " " + o.lev + "x · " + fmt(o.usd) : "Cierre de posición", "", "Se ejecuta al cierre de la vela, a las " + when(o.fillAt)));
+    for (const o of ui.state.pending) box.appendChild(item(o.side === "buy" ? "compra " + pair(o.asset) + " " + o.lev + "x · " + fmt(o.usd) : "cierre de posición", "", "se ejecuta al cierre de la vela, a las " + when(o.fillAt)));
   }
 
-  const KIND = { buy: "Compra", sell: "Cierre manual", tp: "Take-profit", sl: "Stop-loss", liq: "Liquidación", invalid: "Orden no ejecutada", reset: "Reinicio" };
+  const KIND = { buy: "compra", sell: "cierre manual", tp: "take-profit", sl: "stop-loss", liq: "liquidación", invalid: "orden no ejecutada", reset: "reinicio" };
   function renderHistory() {
     const box = $("history"); box.innerHTML = "";
     const h = [...ui.state.history].reverse().slice(0, 50);
-    if (!h.length) box.appendChild(item("Todavía sin operaciones", "", ""));
-    for (const e of h) box.appendChild(item(KIND[e.kind] + (e.asset ? " " + e.asset.toUpperCase() : ""), e.pnl !== undefined ? (e.pnl >= 0 ? "+" : "") + fmt(e.pnl) : "", when(e.t) + (e.price ? " · " + C.fmtPrice(e.price) : "") + (e.why ? " · " + e.why : "")));
+    if (!h.length) box.appendChild(item("todavía sin operaciones", "", ""));
+    for (const e of h) box.appendChild(item(KIND[e.kind] + (e.asset ? " " + pair(e.asset) : ""), e.pnl !== undefined ? (e.pnl >= 0 ? "+" : "") + fmt(e.pnl) : "", when(e.t) + (e.price ? " · " + C.fmtPrice(e.price) : "") + (e.why ? " · " + e.why : "")));
   }
 
   function renderRanking() {
     const box = $("ranking"); box.innerHTML = "";
     const rows = (ui.ranking && ui.ranking.rows) || [];
-    if (!rows.length) { box.appendChild(item("El ranking aparece cuando n8n lo publica, cada hora.", "", "")); return; }
+    if (!rows.length) { box.appendChild(item("el ranking aparece cuando n8n lo publica, cada hora.", "", "")); return; }
     rows.forEach((r, i) => { const d = item((i + 1) + ". " + r.u, (r.r >= 0 ? "+" : "") + r.r + "%", r.resets ? r.resets + (r.resets === 1 ? " reinicio" : " reinicios") : ""); if (r.u === ui.user) d.classList.add("me"); box.appendChild(d); });
   }
 
@@ -131,7 +131,8 @@
   $("sel-asset").onchange = (e) => { ui.asset = e.target.value; $("f-asset").value = ui.asset; render(); };
   $("f-asset").onchange = (e) => { ui.asset = e.target.value; render(); };
   $("sel-range").onchange = (e) => { if (e.target.value) setView(+e.target.value, null); };
-  $("chart").addEventListener("wheel", (e) => { e.preventDefault(); zoom(e.deltaY > 0 ? 2 : 0.5); }, { passive: false });
+  let lastWheel = 0;
+  $("chart").addEventListener("wheel", (e) => { e.preventDefault(); if (Math.abs(e.deltaY) < 20 || e.timeStamp - lastWheel < 150) return; lastWheel = e.timeStamp; zoom(e.deltaY > 0 ? 2 : 0.5); }, { passive: false });
   document.querySelector(".pt-zoom").onclick = (e) => { const z = e.target.dataset && e.target.dataset.z; if (z === "in") zoom(0.5); else if (z === "out") zoom(2); else if (z) pan(z === "fwd" ? 1 : -1); };
   $("order").onsubmit = order;
   $("reset").onclick = reset;
