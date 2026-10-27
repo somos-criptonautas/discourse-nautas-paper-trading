@@ -11,11 +11,13 @@
 
   async function pages(params) {
     // index() pagina de a 100; juntamos todas las páginas
-    let page = 1, out = [];
+    let page = 1, out = [], users = [];
     for (;;) {
       const r = await store.index({ ...params, page, per_page: 100 });
       out = out.concat((r && r.key_values) || []);
-      if (!r || !r.has_more || page > 20) return { key_values: out };
+      for (const u of (r && r.users) || []) if (!users.some((x) => x.id === u.id)) users.push(u);
+      // shortcut: the page > 20 cap silently truncates past ~2000 keys; raise it if the store grows
+      if (!r || !r.has_more || page > 20) return { key_values: out, users };
       page++;
     }
   }
@@ -32,7 +34,8 @@
       const nowKv = sysKv.find((k) => k.key === "now"), rkKv = sysKv.find((k) => k.key === "ranking");
       ui.now = nowKv ? JSON.parse(nowKv.value) : null;
       ui.ranking = rkKv ? JSON.parse(rkKv.value) : null;
-      ui.mine = sys.key_values.filter((k) => ui.user && k.user_id !== R.SYSTEM_ID && k.user && k.user.username === ui.user);
+      const me = sys.users.find((u) => u.username === ui.user);
+      ui.mine = me ? sys.key_values.filter((k) => k.user_id === me.id) : [];
     } catch (e) {
       note("No pudimos leer los precios. Recarga la página en un momento.");
     }

@@ -49,18 +49,18 @@ keys.append({"key": "now", "user_id": -1, "value": json.dumps({"t": now, **base}
 keys.append({"key": "ranking", "user_id": -1, "value": json.dumps({"t": now, "rows": [{"u": "satoshi", "r": 12.5, "resets": 0}, {"u": "preview", "r": -3.1, "resets": 1}]})})
 iso = lambda s: time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(s))
 mine = [
-    {"key": f"o-{(now - 5 * 86400) * 1000}", "user_id": 7, "user": {"username": "preview"}, "created_at": iso(now - 5 * 86400), "value": json.dumps({"asset": "btc", "side": "buy", "usd": 100, "lev": 2, "sl": base["btc"] * 0.8})},
-    {"key": f"o-{(now - 2 * 86400) * 1000}", "user_id": 7, "user": {"username": "preview"}, "created_at": iso(now - 2 * 86400), "value": json.dumps({"asset": "eth", "side": "buy", "usd": 50, "lev": 1, "tp": base["eth"] * 1.1})},
+    {"key": f"o-{(now - 5 * 86400) * 1000}", "user_id": 7, "created_at": iso(now - 5 * 86400), "value": json.dumps({"asset": "btc", "side": "buy", "usd": 100, "lev": 2, "sl": base["btc"] * 0.8})},
+    {"key": f"o-{(now - 2 * 86400) * 1000}", "user_id": 7, "created_at": iso(now - 2 * 86400), "value": json.dumps({"asset": "eth", "side": "buy", "usd": 50, "lev": 1, "tp": base["eth"] * 1.1})},
 ]
 mock = f"""<script>
 window.discourseArtifactReady = Promise.resolve({{ username: "preview" }});
 const _sys = {json.dumps(keys)}; const _mine = {json.dumps(mine)};
 window.discourseArtifact = {{
   get: async (k) => {{ const x = _mine.find((m) => m.key === k); return x ? x.value : null; }},
-  set: async (k, v) => {{ _mine.push({{ key: k, user_id: 7, user: {{ username: "preview" }}, created_at: new Date().toISOString(), value: v }}); console.log("set", k, v); return {{}}; }},
+  set: async (k, v) => {{ _mine.push({{ key: k, user_id: 7, created_at: new Date().toISOString(), value: v }}); console.log("set", k, v); return {{}}; }},
   delete: async (k) => {{ const i = _mine.findIndex((m) => m.key === k); if (i >= 0) _mine.splice(i, 1); console.log("delete", k); return {{}}; }},
   index: async (p) => {{ const all = (p && p.all_users ? _sys : []).concat(_mine); const per = (p && p.per_page) || 100, pg = (p && p.page) || 1;
-    return {{ key_values: all.slice((pg - 1) * per, pg * per), has_more: all.length > pg * per }}; }},
+    return {{ key_values: all.slice((pg - 1) * per, pg * per), has_more: all.length > pg * per, total_count: all.length, users: [{{ id: 7, username: "preview" }}, {{ id: -1, username: "system" }}] }}; }},
 }};
 </script>"""
 (DIST / "preview.html").write_text(
