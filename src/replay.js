@@ -23,7 +23,7 @@ function mergeCandles(res) {
     if (!v || !Number.isFinite(v.t0)) continue;
     for (const a of ASSETS) {
       (v[a] || []).forEach((x, i) => {
-        if (Array.isArray(x) && x.length === 3 && x.every(Number.isFinite)) out[a].push({ t: v.t0 + i * CANDLE, h: x[0], l: x[1], c: x[2] });
+        if (Array.isArray(x) && (x.length === 3 || x.length === 4) && x.every(Number.isFinite)) out[a].push({ t: v.t0 + i * CANDLE, h: x[0], l: x[1], c: x[2], v: x[3] || 0 });
       });
     }
   }

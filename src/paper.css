@@ -29,9 +29,12 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-row span:first-child { color: var(--muted); min-width: 70px; }
 .pt-row strong { font-size: 20px; }
 .pt-perf.up { color: var(--good); } .pt-perf.down { color: var(--bad); }
-.pt-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.pt-bar select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-.pt-zoom { display: flex; gap: 6px; margin-left: auto; }
+.pt-chartbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pt-pan, .pt-zoom { display: flex; gap: 6px; }
+.pt-zoom { margin-left: auto; }
+.pt-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pt-zoom svg { width: 16px; height: 16px; vertical-align: -3px; }
+.pt-chartbar select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
 .pt-quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .pt-zoom button, .pt-quick button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--text); border: 1px solid var(--border); }
 .pt-chart svg { display: block; }
@@ -45,6 +48,11 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-chart .label { font-size: 11px; }
 .pt-chart .line.off { stroke-dasharray: 2 2; }
 .pt-chart .label.off { font-weight: 600; }
+.vol rect { fill: var(--muted); opacity: .5; }
+.pt-chart .pane { fill: var(--muted); font-size: 11px; }
+.pt-chart .line.last { stroke: var(--accent); }
+.pt-chart rect.label.last { fill: var(--accent); }
+.pt-chart text.label.last { fill: var(--on-accent); }
 .pt-chart .stoch { fill: none; stroke-width: 1.3; }
 .pt-chart .stoch.k { stroke: var(--accent); }
 .pt-chart .stoch.d { stroke: var(--muted); }

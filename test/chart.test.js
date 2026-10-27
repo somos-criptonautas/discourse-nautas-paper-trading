@@ -29,4 +29,16 @@ assert.match(withStoch, /viewBox="0 0 640 340"/);
 assert.match(withStoch, /class="stoch k"/);
 assert.match(withStoch, /class="stoch d"/);
 assert.match(withStoch, /class="stoch k" points="[^"]+,/); // not empty when zoomed
+const full = chartSVG(rise.slice(-12), [], { width: 640, height: 260, volume: true, stoch: stochastic(rise).slice(-12) });
+assert.match(full, /viewBox="0 0 640 400"/); // 260 + 60 + 80
+assert.match(chartSVG(c, [], { width: 640, height: 260, volume: true }), /viewBox="0 0 640 320"/);
+assert.match(full, /class="vol"/);
+assert.match(full, />volumen</);
+assert.match(full, />estocástico \(stoch\)</);
+const lastSvg = chartSVG(c, [], { width: 640, height: 260, last: 10.5 });
+assert.match(lastSvg, /class="line last"/);
+assert.match(lastSvg, /class="label last"/);
+assert.match(lastSvg, />10\.5</);
+const ticks = (chartSVG(c, [], { width: 640, height: 260 }).match(/<text class="axis" x="(?:582)"/g) || []).length;
+assert.strictEqual(ticks, 8);
 console.log("chart ok");

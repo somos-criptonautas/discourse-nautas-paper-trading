@@ -57,7 +57,7 @@
     $("f-usd").max = Math.floor(s.balance);
     $("perf").textContent = (s.perf >= 0 ? "+" : "") + s.perf + "%";
     $("perf").className = "pt-perf " + (s.perf >= 0 ? "up" : "down");
-    renderChart(); renderPositions(); renderPending(); renderHistory(); renderRanking();
+    renderChart(); prefill(); renderPositions(); renderPending(); renderHistory(); renderRanking();
     $("resets").textContent = s.resets ? "reiniciaste " + s.resets + (s.resets === 1 ? " vez." : " veces.") : "";
     $("submit").disabled = !ui.user;
     $("reset").disabled = !ui.user;
@@ -84,8 +84,18 @@
       { price: p.entry, label: "entrada", cls: "entry" },
       p.tp && { price: p.tp, label: "TP", cls: "tp" }, p.sl && { price: p.sl, label: "SL", cls: "sl" }, p.liq && { price: p.liq, label: "liq", cls: "liq" },
     ].filter(Boolean));
-    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, stoch: C.stochastic(all).slice(from, end) }) || "<p class='pt-meta'>sin velas en este rango.</p>";
+    const last = ui.now && ui.now[ui.asset];
+    $("now-price").textContent = last ? "· " + C.fmtPrice(last) : "";
+    $("submit").textContent = "comprar " + pair(ui.asset) + " al cierre de vela";
+    $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, volume: true, last, stoch: C.stochastic(all).slice(from, end) }) || "<p class='pt-meta'>sin velas en este rango.</p>";
   }
+
+  // TP/SL start at the current price; a field the user touched is left alone
+  function prefill() {
+    const p = ui.now && ui.now[ui.asset];
+    for (const id of ["f-tp", "f-sl"]) if (p && !$(id).dataset.touched) $(id).value = p;
+  }
+  function clearTouched() { for (const id of ["f-tp", "f-sl"]) { delete $(id).dataset.touched; $(id).value = ""; } prefill(); }
 
   const item = (main, right, small) => { const d = document.createElement("div"); d.className = "item"; d.innerHTML = "<span></span><span></span><small></small>"; d.children[0].textContent = main; d.children[1].textContent = right; d.children[2].textContent = small; return d; };
 
@@ -123,17 +133,17 @@
   }
 
   async function close(p) { /* Task 6 */ }
-  async function order(ev) { ev.preventDefault(); /* Task 6 */ }
+  async function order(ev) { ev.preventDefault(); /* Task 6 */ clearTouched(); }
   async function reset() { /* Task 6 */ }
 
   const opts = R.ASSETS.map((a) => `<option value="${a}">${pair(a)}</option>`).join("");
-  $("f-asset").innerHTML = opts; $("sel-asset").innerHTML = opts;
-  $("sel-asset").onchange = (e) => { ui.asset = e.target.value; $("f-asset").value = ui.asset; render(); };
-  $("f-asset").onchange = (e) => { ui.asset = e.target.value; render(); };
+  $("sel-asset").innerHTML = opts;
+  $("sel-asset").onchange = (e) => { ui.asset = e.target.value; clearTouched(); render(); };
+  for (const id of ["f-tp", "f-sl"]) $(id).addEventListener("input", () => { $(id).dataset.touched = "1"; });
   $("sel-range").onchange = (e) => { if (e.target.value) setView(+e.target.value, null); };
   let lastWheel = 0;
   $("chart").addEventListener("wheel", (e) => { e.preventDefault(); if (Math.abs(e.deltaY) < 20 || e.timeStamp - lastWheel < 150) return; lastWheel = e.timeStamp; zoom(e.deltaY > 0 ? 2 : 0.5); }, { passive: false });
-  document.querySelector(".pt-zoom").onclick = (e) => { const z = e.target.dataset && e.target.dataset.z; if (z === "in") zoom(0.5); else if (z === "out") zoom(2); else if (z) pan(z === "fwd" ? 1 : -1); };
+  document.querySelector(".pt-chartbar").onclick = (e) => { const b = e.target.closest("button"), z = b && b.dataset.z; if (z === "in") zoom(0.5); else if (z === "out") zoom(2); else if (z) pan(z === "fwd" ? 1 : -1); };
   $("order").onsubmit = order;
   $("reset").onclick = reset;
   load().then(render);

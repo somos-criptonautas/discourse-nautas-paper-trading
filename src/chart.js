@@ -15,16 +15,16 @@ function stochastic(candles, n = 14, kS = 3, dS = 3) {
 }
 function chartSVG(candles, lines, opts) {
   if (!candles.length) return "";
-  const W = opts.width, H = opts.height, SH = 80, padR = 64, padB = 22, padT = 8;
+  const W = opts.width, H = opts.height, SH = 80, VH = 60, padR = 64, padB = 22, padT = 8;
   const ys = candles.flatMap((k) => [k.h, k.l]);
   let lo = Math.min(...ys), hi = Math.max(...ys);
   const m = (hi - lo || hi || 1) * 0.04; lo -= m; hi += m;
   const y = (p) => padT + ((hi - p) / (hi - lo)) * (H - padT - padB);
   const cw = (W - padR) / candles.length, bw = Math.max(1, cw * 0.6);
   const esc = (s) => String(s).replace(/[<&>"]/g, (ch) => ({ "<": "&lt;", "&": "&amp;", ">": "&gt;", '"': "&quot;" }[ch]));
-  let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H + (opts.stoch ? SH : 0)}" width="100%" role="img" aria-label="velas de 4h">`;
-  for (let i = 0; i < 4; i++) {
-    const p = lo + ((hi - lo) * i) / 3, yy = y(p);
+  let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H + (opts.volume ? VH : 0) + (opts.stoch ? SH : 0)}" width="100%" role="img" aria-label="velas de 4h">`;
+  for (let i = 0; i < 8; i++) {
+    const p = lo + ((hi - lo) * i) / 7, yy = y(p);
     out += `<line class="grid" x1="0" x2="${W - padR}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/><text class="axis" x="${W - padR + 6}" y="${(yy + 4).toFixed(1)}">${fmtPrice(p)}</text>`;
   }
   let lastDay = "";
@@ -44,9 +44,21 @@ function chartSVG(candles, lines, opts) {
     const yy = (off ? (l.price < cLo ? H - padB : padT) : y(l.price)).toFixed(1);
     out += `<line class="line ${esc(l.cls)}${off ? " off" : ""}" x1="0" x2="${W - padR}" y1="${yy}" y2="${yy}"/><text class="label ${esc(l.cls)}${off ? " off" : ""}" x="4" y="${(+yy + (off && l.price > cHi ? 12 : -4)).toFixed(1)}">${off}${esc(l.label)} ${fmtPrice(l.price)}</text>`;
   }
+  if (Number.isFinite(opts.last)) {
+    // pinned to the edge when outside the candle range, like the other lines
+    const yy = Math.min(H - padB, Math.max(padT, y(opts.last))).toFixed(1), txt = fmtPrice(opts.last);
+    out += `<line class="line last" x1="0" x2="${W - padR}" y1="${yy}" y2="${yy}"/><rect class="label last" x="${W - padR + 2}" y="${(yy - 8).toFixed(1)}" width="${txt.length * 7 + 8}" height="16" rx="3"/><text class="label last" x="${W - padR + 6}" y="${(+yy + 4).toFixed(1)}">${txt}</text>`;
+  }
+  let top = H;
+  if (opts.volume) {
+    const vmax = Math.max(...candles.map((k) => k.v || 0)) || 1;
+    out += `<g transform="translate(0,${top})"><text class="pane" x="4" y="12">volumen</text>`;
+    candles.forEach((k, i) => { const h = ((k.v || 0) / vmax) * (VH - 18); out += `<rect class="vol" x="${(i * cw + cw / 2 - bw / 2).toFixed(1)}" y="${(VH - 4 - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"/>`; });
+    out += "</g>"; top += VH;
+  }
   if (opts.stoch) {
     const sy = (v) => (4 + ((100 - v) / 100) * (SH - 8)).toFixed(1), pts = (key) => opts.stoch.map((s, i) => s && `${(i * cw + cw / 2).toFixed(1)},${sy(s[key])}`).filter(Boolean).join(" ");
-    out += `<g transform="translate(0,${H})">`;
+    out += `<g transform="translate(0,${top})"><text class="pane" x="4" y="12">estocástico (stoch)</text>`;
     for (const v of [20, 80]) out += `<line class="grid" x1="0" x2="${W - padR}" y1="${sy(v)}" y2="${sy(v)}" stroke-dasharray="3 3"/><text class="axis" x="${W - padR + 6}" y="${(+sy(v) + 4).toFixed(1)}">${v}</text>`;
     out += `<polyline class="stoch k" points="${pts("k")}"/><polyline class="stoch d" points="${pts("d")}"/></g>`;
   }

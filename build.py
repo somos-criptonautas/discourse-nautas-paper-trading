@@ -39,7 +39,7 @@ for w in range(27):
                     break
                 c = base[a] * (1 + rnd.uniform(-0.02, 0.02))
                 h, l = max(base[a], c) * (1 + rnd.uniform(0, 0.01)), min(base[a], c) * (1 - rnd.uniform(0, 0.01))
-                rows.append([float(f"{h:.4g}"), float(f"{l:.4g}"), float(f"{c:.4g}")])
+                rows.append([float(f"{h:.4g}"), float(f"{l:.4g}"), float(f"{c:.4g}"), round(rnd.uniform(0.5, 1.5) * base[a] * 10)])
                 base[a] = c
             v[a] = rows
         d = time.gmtime(t0 + 3 * 86400)
