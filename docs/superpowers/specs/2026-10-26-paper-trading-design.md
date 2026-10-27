@@ -13,7 +13,9 @@ que actúa como `system`.
   por debajo de la entrada: se pierde el monto puesto, nunca más. Sin intereses ni funding; el artifact lo aclara.
 - Velas de 4h. Toda orden se ejecuta al cierre de la vela de 4h en curso. Liquidación, TP y SL se evalúan
   contra el máximo y el mínimo de cada vela y se ejecutan al precio fijado. Si una misma vela toca varios,
-  el orden es liquidación, SL, TP (regla conservadora, idéntica en artifact y n8n).
+  gana el nivel de abajo más cercano a la entrada: SL antes que liquidación (el precio cae y toca primero el
+  SL, que siempre está por encima), y cualquiera de los dos antes que TP (regla conservadora, idéntica en
+  artifact y n8n).
 - Activos: BTC, ETH, PAXG, XMR, XNO, TRX, cotizados en USD. Fuente: CoinGecko, plan gratuito.
 - Saldo inicial 1.000 USD, cercano a lo que pondría alguien que empieza. Reinicio libre; el ranking muestra
   cuántas veces reinició cada uno.
