@@ -48,7 +48,7 @@ Trigger: cron `5 12 * * *` UTC.
 
 1. `topic` (Set): `topic_id = 7161`. **Change the topic id here too.**
 2. `read-all-pages`, `merge-pages`: same as ranking.
-3. `summary` (Code): full `dist/n8n-daily.js` + glue; returns no item when nothing happened in the last 24 h.
+3. `summary` (Code): full `dist/n8n-daily.js` + glue; returns no item when fewer than 3 people traded in the last 24 h (a smaller count would point at people).
 4. `post-summary` (HTTP POST `https://comunidad.criptonautas.co/posts.json`, `{topic_id, raw}`) as system.
 
 When the group message exists: set its id in `topic` in both workflows (ranking and daily), then publish `paper-trading-daily`.

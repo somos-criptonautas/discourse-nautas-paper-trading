@@ -69,9 +69,12 @@ console.log("n8n ranking ok");
 // --- daily ---
 const D = load("daily");
 assert.strictEqual(D.dailySummary([], cnd, NOW), "");
-let txt = D.dailySummary([ana, bob], cnd, T0 + 2 * R.CANDLE + 10); // candle 1 is closed by now: both buys and bob's SL fall within the last 24h
-assert.match(txt, /2 compras/); assert.match(txt, /1 stop-loss/); assert.match(txt, /2 participantes/);
+// Fewer than 3 traders in the window: no summary, a count of one or two would point at people
+assert.strictEqual(D.dailySummary([ana, bob], cnd, T0 + 2 * R.CANDLE + 10), "");
+const eve = kv(5, "eve", "o-5", JSON.stringify({ asset: "btc", side: "buy", usd: 50, lev: 1 }), T0 + 90);
+let txt = D.dailySummary([ana, bob, eve], cnd, T0 + 2 * R.CANDLE + 10); // candle 1 is closed by now: three buys and bob's SL fall within the last 24h
+assert.match(txt, /3 compras/); assert.match(txt, /1 stop-loss/); assert.match(txt, /3 participantes/);
 assert.match(txt, /^\*\*paper trading, últimas 24h:\*\*/);
-assert.doesNotMatch(txt, /ana|bob/);
+assert.doesNotMatch(txt, /ana|bob|eve/);
 assert.strictEqual(D.dailySummary([ana, bob], cnd, T0 + 3 * 86400), ""); // nothing in the last 24h
 console.log("n8n daily ok");

@@ -1,4 +1,6 @@
 // n8n/daily.js — Code node of paper-trading-daily. Paste dist/n8n-daily.js into the node.
+const MIN_TRADERS = 3;
+
 function dailySummary(keyValues, candles, now) {
   const byUser = new Map();
   for (const kv of keyValues) { if (!byUser.has(kv.user_id)) byUser.set(kv.user_id, []); byUser.get(kv.user_id).push(kv); }
@@ -9,7 +11,8 @@ function dailySummary(keyValues, candles, now) {
       n[h.kind]++; users.add(uid);
     }
   }
-  if (!users.size) return "";
+  // With one or two traders an anonymous count would still point at people
+  if (users.size < MIN_TRADERS) return "";
   const part = (k, one, many) => (n[k] ? n[k] + " " + (n[k] === 1 ? one : many) : "");
   const items = [part("buy", "compra", "compras"), part("sell", "cierre manual", "cierres manuales"), part("tp", "take-profit", "take-profits"), part("sl", "stop-loss", "stop-loss"), part("liq", "liquidación", "liquidaciones")].filter(Boolean);
   return "**paper trading, últimas 24h:** " + items.join(", ") + ". operaron " + users.size + (users.size === 1 ? " participante" : " participantes") + ". sin nombres: cada quien ve lo suyo en el artifact.";
