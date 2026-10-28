@@ -121,7 +121,7 @@
       const d = item(pair(p.asset) + " " + p.lev + "x · " + fmt(p.usd), (p.pnl >= 0 ? "+" : "") + fmt(p.pnl),
         "entrada " + C.fmtPrice(p.entry) + (p.tp ? " · TP " + C.fmtPrice(p.tp) : "") + (p.sl ? " · SL " + C.fmtPrice(p.sl) : "") + (p.liq ? " · liq " + C.fmtPrice(p.liq) : "") + " · " + when(p.openedAt + R.CANDLE));
       d.children[1].className = p.pnl >= 0 ? "pt-perf up" : "pt-perf down";
-      if (ui.user) { const b = document.createElement("button"); b.type = "button"; b.className = "close"; b.textContent = "cerrar al cierre de vela"; b.onclick = () => close(p); d.appendChild(b); }
+      if (ui.user) { const b = document.createElement("button"); b.type = "button"; b.className = "close"; b.textContent = "cerrar al cierre de vela"; b.onclick = () => { b.disabled = true; close(p); }; d.appendChild(b); }
       box.appendChild(d);
     }
   }
@@ -158,16 +158,20 @@
     $("hint").textContent = t;
   }
 
+  let busy = false; // one write at a time: state only refreshes after the reload
   async function write(key, value, okText) {
-    $("submit").disabled = true;
-    try { await store.set(key, JSON.stringify(value)); }
-    catch (e) { note("no se pudo guardar. revisa tu conexión e inténtalo de nuevo."); validate(); return false; }
-    note(okText);
-    await load(); render(); return true;
+    busy = true; $("submit").disabled = true;
+    try {
+      try { await store.set(key, JSON.stringify(value)); }
+      catch (e) { note("no se pudo guardar. revisa tu conexión e inténtalo de nuevo."); validate(); return false; }
+      note(okText);
+      await load(); render(); return true;
+    } finally { busy = false; }
   }
 
   async function order(ev) {
     ev.preventDefault();
+    if (busy || !ui.state) return;
     const f = fields();
     if (R.checkOrder(f, refPrice(), ui.state.balance, ui.mine.length)) return validate();
     const v = { asset: f.asset, side: "buy", usd: f.usd, lev: f.lev };
@@ -177,17 +181,23 @@
   }
 
   async function close(p) {
+    if (busy) return;
     if (ui.state.pending.some((o) => o.of === p.id)) return note("ya hay un cierre pendiente para esa posición.");
     await write("o-" + Date.now(), { side: "sell", of: p.id }, "cierre guardado. se ejecuta al cierre de la vela.");
   }
 
   async function reset() {
-    if (!confirm("reiniciamos con 1.000 USD. las posiciones abiertas se pierden y el ranking mostrará un reinicio más. ¿seguimos?")) return;
-    try { await store.set("reset-" + Date.now(), "1"); } catch (e) { return note("no se pudo reiniciar. inténtalo de nuevo."); }
-    // Only o-* keys go; markers stay so server timestamps keep the reset honest
-    for (const k of ui.mine.filter((k) => /^o-/.test(k.key))) { try { await store.delete(k.key); } catch (e) {} }
-    note("reiniciamos con 1.000 USD.");
-    await load(); render();
+    if (busy || !confirm("reiniciamos con 1.000 USD. las posiciones abiertas se pierden y el ranking mostrará un reinicio más. ¿seguimos?")) return;
+    busy = true; $("reset").disabled = true;
+    try {
+      try { await store.set("reset-" + Date.now(), "1"); } catch (e) { return note("no se pudo reiniciar. inténtalo de nuevo."); }
+      await load(); // pick up orders written from another tab
+      // Only o-* keys go; markers stay so server timestamps keep the reset honest
+      let failed = 0;
+      for (const k of ui.mine.filter((k) => /^o-/.test(k.key))) { try { await store.delete(k.key); } catch (e) { failed++; } }
+      note(failed ? "reiniciamos, pero quedaron " + failed + " órdenes viejas sin borrar." : "reiniciamos con 1.000 USD.");
+      await load(); render();
+    } finally { busy = false; $("reset").disabled = !ui.user; }
   }
 
   const opts = R.ASSETS.map((a) => `<option value="${a}">${pair(a)}</option>`).join("");
