@@ -76,6 +76,15 @@ assert.deepStrictEqual(plain(r.flagged), [2]);
 // (h) an edit before the last reset no longer counts
 r = K.rankAll([ana, edited(bob, T0 + 600), bobReset], cnd, NOW, []);
 assert.deepStrictEqual(plain(r.flagged), []);
+// (i) seasons: a vanished or edited key from the previous season does not flag; one from this season does
+const S0 = Date.UTC(2026, 8, 1) / 1000;
+r = K.rankAll([ana, bob], cnd, NOW, [gone(2, "o-8", S0 - 86400)]);
+assert.deepStrictEqual(plain(r.flagged), []);
+r = K.rankAll([ana, bob], cnd, NOW, [gone(2, "o-8", S0 + 86400)]);
+assert.deepStrictEqual(plain(r.flagged), [2]);
+r = K.rankAll([ana, edited({ ...bob, created_at: new Date((S0 - 86400) * 1000).toISOString() }, T0 + 600)], cnd, NOW, []);
+assert.deepStrictEqual(plain(r.flagged), []);
+assert.deepStrictEqual(plain(r.ranking.season), { start: S0, end: Date.UTC(2027, 0, 1) / 1000 });
 console.log("n8n ranking ok");
 
 // --- daily ---
