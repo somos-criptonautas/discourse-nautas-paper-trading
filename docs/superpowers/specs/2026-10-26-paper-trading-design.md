@@ -20,7 +20,8 @@ que actúa como `system`.
   (`/0/public/OHLC`, `interval=240`, sin clave), pares XBTUSD, ETHUSD, PAXGUSD, XMRUSD, NANOUSD (XNO), TRXUSD.
   Trae 720 velas por llamada, unos cuatro meses, con volumen por vela.
 - Saldo inicial 1.000 USD, cercano a lo que pondría alguien que empieza. Reinicio libre; el ranking muestra
-  cuántas veces reinició cada uno.
+  cuántas veces reinició cada uno. Temporadas de cuatro meses (bloques UTC que empiezan el 1/1, 1/5 y 1/9):
+  todos vuelven a 1.000 USD al empezar cada una y el ranking sólo cuenta la temporada en curso.
 - Tamaños: el monto se ingresa en USD, mínimo 10, máximo el saldo; el artifact muestra las unidades con
   fracciones y ofrece 2%, 5% y 10% del saldo. Cada compra es una posición independiente con su TP, SL y
   apalancamiento; se cierra a mano de a una.
@@ -85,14 +86,15 @@ como no ejecutada ("orden modificada después de enviarla").
   velas de 4h. Valor JSON compacto: `{ "t0": <epoch del primer cierre>, "btc": [[h,l,c,v], ...], ... }`,
   42 velas por activo, precios y volumen (en unidades del activo) con cuatro cifras significativas. Unos
   3.000 caracteres por clave: una sola clave semanal con los seis activos superaría el límite de 5.000. Se conservan 26 semanas (52
-  claves de las 100 que admite `system`); las más viejas se borran.
+  claves de las 100 que admite `system`; una temporada entera, 120 días, siempre tiene velas); las más viejas se borran.
 - `now`: `{ "t": <epoch>, "btc": 67123.4, ... }`, último precio (cierre de la vela en curso de Kraken),
   actualizado cada 5 minutos. Sólo para mostrar y precargar TP/SL; nunca entra en el repaso.
-- `ranking`: `{ "t": <epoch>, "rows": [{ "u": "nombre", "r": 12.3, "resets": 1 }, ...] }`, ordenado por
+- `ranking`: `{ "t": <epoch>, "season": { "start": <epoch>, "end": <epoch> }, "rows": [{ "u": "nombre", "r": 12.3, "resets": 1 }, ...] }`, ordenado por
   rendimiento, actualizado cada hora. Quienes borraron operaciones no aparecen.
 
-Posiciones con órdenes más viejas que las 26 semanas publicadas no se pueden repasar: el artifact lo
-dice y propone reiniciar. Caso raro para swing; si aparece, se amplía el historial con velas diarias.
+Las claves de temporadas anteriores se ignoran en el repaso (el inicio de temporada es un reinicio implícito),
+así que nunca hacen falta velas más viejas que la temporada. Al abrir, el artifact borra las claves `o-*` y
+`reset-*` propias anteriores al inicio de temporada para no gastar el presupuesto de 100 claves.
 
 ## 3. Flujos n8n
 
