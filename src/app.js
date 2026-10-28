@@ -36,8 +36,9 @@
       ui.ranking = rkKv ? JSON.parse(rkKv.value) : null;
       const me = sys.users.find((u) => u.username === ui.user);
       ui.mine = me ? sys.key_values.filter((k) => k.user_id === me.id) : [];
-      // Keys from past seasons are ignored by the ranking: drop them so they never eat the 100-key budget
-      const cut = R.seasonStart(nowSec()) * 1000;
+      // Keys from past seasons are ignored by the ranking: drop them so they never eat the 100-key budget.
+      // Only with the server time: a client clock running months ahead must never delete this season's orders.
+      const cut = ui.now && Number.isFinite(ui.now.t) ? R.seasonStart(ui.now.t) * 1000 : -Infinity;
       for (const k of ui.mine.filter((k) => /^(o|reset)-\d+$/.test(k.key) && Date.parse(k.created_at) < cut)) {
         try { await store.delete(k.key); ui.mine = ui.mine.filter((m) => m !== k); } catch (e) {}
       }
