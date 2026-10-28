@@ -24,6 +24,11 @@ body { font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 .pt-note { margin: 0; font-size: 15px; color: var(--muted); padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; }
 .pt-card { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
 .pt-card--tint { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+/* Inverse tint: a touch darker in light, a touch lighter in dark */
+.pt-card--invert { background: color-mix(in srgb, var(--text) 7%, var(--surface)); }
+/* Ranking sits under the chart on wide screens; on one column it stays near the end, after the reset card */
+.pt-ranking { order: 99; }
+.pt-actions { order: 100; }
 .pt-divider { width: 50%; margin: 4px auto; border: 0; border-top: 1px solid var(--border-strong); }
 details.pt-card summary { cursor: pointer; font-weight: 600; }
 details.pt-card[open] summary { margin-bottom: 6px; }
@@ -75,10 +80,11 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-lev label { flex-direction: row; align-items: center; gap: 6px; color: var(--text); }
 .pt-hint { margin: 0; font-size: 14px; color: var(--muted); }
 .pt-err { margin: 0; font-size: 15px; color: var(--bad); }
-.pt-actions { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+.pt-actions { gap: 6px; margin-top: auto; }
 .pt-col { display: contents; }
 @media (min-width: 900px) {
-  .pt { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; align-items: start; }
+  /* No min-height here: grid rows would split the leftover embed height and open gaps above and between */
+  .pt { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; align-items: start; align-content: start; min-height: 0; }
   .pt-head, .pt-note { grid-column: 1 / -1; }
   .pt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .pt-actions { margin-top: 0; }
