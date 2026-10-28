@@ -66,12 +66,12 @@
   const pair = (a) => a.toUpperCase() + "/USDT";
   function closed() { return ui.candles[ui.asset].filter((k) => k.t + R.CANDLE <= nowSec()); }
   // Zoom/pan state: count visible candles, end = index after the last visible one (null = latest)
-  function setView(count, end, light) {
+  function setView(count, end) {
     const n = closed().length, v = ui.view;
     v.count = Math.max(Math.min(12, n), Math.min(n, Math.round(count)));
     end = end === null ? null : Math.round(end);
     v.end = end === null || end >= n ? null : Math.max(v.count, end);
-    light ? renderChart() : render(); // light: only the chart (used while dragging)
+    renderChart(); // zoom and pan never change the state: no replay
   }
   function zoom(f) { setView(ui.view.count * f, ui.view.end); }
 
@@ -241,13 +241,13 @@
   });
   chartEl.addEventListener("pointermove", (e) => {
     if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, e.clientX);
-    if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; setView(pinch.count / ((Math.abs(a - b) || 1) / pinch.d), pinch.end, true); return; }
+    if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; setView(pinch.count / ((Math.abs(a - b) || 1) / pinch.d), pinch.end); return; }
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y, v = ui.view;
     if (drag.kind === "pan") {
       if (v.yScale) v.yScale = { factor: drag.factor, offset: drag.offset + (dy / drag.plotPx) * drag.span * drag.factor };
-      setView(drag.count, drag.end - dx / drag.cwPx, true);
-    } else if (drag.kind === "time") setView(drag.count * Math.pow(1.1, -dx / 40), drag.end, true);
+      setView(drag.count, drag.end - dx / drag.cwPx);
+    } else if (drag.kind === "time") setView(drag.count * Math.pow(1.1, -dx / 40), drag.end);
     else { v.yScale = { factor: Math.min(20, Math.max(0.1, drag.factor * Math.pow(1.1, dy / 40))), offset: drag.offset }; renderChart(); }
   });
   const endDrag = (e) => { ptrs.delete(e.pointerId); if (pinch) { pinch = null; ptrs.clear(); } drag = null; };
@@ -255,7 +255,7 @@
   chartEl.addEventListener("pointercancel", endDrag);
   chartEl.addEventListener("lostpointercapture", endDrag);
   chartEl.addEventListener("dblclick", () => {
-    if (lastKind === "price") { ui.view.yScale = null; render(); } else if (lastKind === "time") setView(180, null);
+    if (lastKind === "price") { ui.view.yScale = null; renderChart(); } else if (lastKind === "time") setView(180, null);
   });
   $("sel-range").onchange = (e) => { if (e.target.value) setView(+e.target.value, null); };
   let lastWheel = 0;
