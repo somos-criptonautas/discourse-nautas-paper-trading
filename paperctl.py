@@ -30,8 +30,11 @@ def publish():
     res = quizctl.post(env("CURSO_WEBHOOK_URL", "https://api.criptonautas.co/webhook/curso-artifacts"), body,
                        {"X-Curso-Token": env("CURSO_WEBHOOK_TOKEN")})
     IDS.write_text(json.dumps(res))
+    # [wrap=full-screen] is the hook the theme widens the topic on (Horizon Mods Nautas, scss/topic.scss)
     (ROOT / "embed.md").write_text(
-        f'<div class="ai-artifact" data-ai-artifact-id="{res["artifact_id"]}" data-ai-artifact-height="{HEIGHT}" data-ai-artifact-seamless="true"></div>\n')
+        "[wrap=full-screen]\n"
+        f'<div class="ai-artifact" data-ai-artifact-id="{res["artifact_id"]}" data-ai-artifact-height="{HEIGHT}" data-ai-artifact-seamless="true"></div>\n'
+        "[/wrap]\n")
     print("ok artifact", res["artifact_id"], "→ embed.md")
 
 
