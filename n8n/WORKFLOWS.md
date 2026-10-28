@@ -6,7 +6,7 @@ Built in n8n (project "D C", tag `discourse`). Error workflow of all three: `wor
 |---|---|---|
 | paper-trading-prices | `YdmuZPR4VuEaew4m` | no, blocked (see below) |
 | paper-trading-ranking | `fzvv7c56koRWUzpK` | no, blocked (see below) |
-| paper-trading-daily | `hhXrhnvESeqwkOlJ` | no, until the group message topic exists |
+| paper-trading-daily | `hhXrhnvESeqwkOlJ` yes, daily |
 
 Blocker: on 2026-10-28 every Code node run failed with "Task request timed out" (the n8n task runner does not pick up Code tasks; the other workflows on this instance use no Code nodes). Fix the runner, run the backfill, check the first runs, then publish prices and ranking.
 
@@ -26,32 +26,20 @@ Triggers: `Every 5 min` (schedule) and `Manual Trigger` (backfill).
 
 Backfill: open the workflow in n8n and run it from `Manual Trigger` ("Execute workflow" on that trigger), or `execute_workflow` with `triggerNodeName: "Manual Trigger"`. It writes every weekly key Kraken's 720 candles cover (about 36) and `now`. Safe to repeat.
 
-Status: prices and ranking published on 2026-10-28; daily unpublished until the group message topic exists. Task runner: external, one runner pointed at `n8n-worker:5679` (queue mode); manual executions are offloaded to the worker.
+Status: prices and ranking published on 2026-10-28; daily published. Task runner: external, one runner pointed at `n8n-worker:5679` (queue mode); manual executions are offloaded to the worker.
 
 ## paper-trading-ranking
 
 Trigger: hourly at minute 7.
 
-1. `topic` (Set): `topic_id = 7161` (test topic). **Change the topic id here.**
-2. `read-all-pages` (HTTP GET, paginated): every key of every user.
-3. `merge-pages` (Code): joins the pages, attaches `user.username` to each non-system key (`user_id` mapped through the `users` of all pages), and throws (nothing is written) if there are no pages, a page lacks `key_values`, or the last page still has `has_more`.
-4. `read-seen` (Data Table, get all rows, always output).
-5. `rank` (Code): full `dist/n8n-ranking.js` + glue; `mergeCandles` takes the full list, `rankAll` only users (`user_id !== -1`). Outputs `{ranking, newSeen, flagged}`.
-6. `write-ranking` (HTTP POST): key `ranking`, public.
-7. `split-new-seen` -> `insert-seen` (Data Table insert `user_id`, `key`, `created_at`).
-8. `any flagged?` (IF `flagged.length > 0`) -> `notify-flag` (POST `/posts.json` to `topic_id` from `topic`, text with the flagged user ids). Note: it repeats every hour while a user stays flagged.
-9. Group branch, after `rank`: `group` (HTTP GET `/groups/paper-trading.json`, credential required, continue on error) -> `any-rows?` (IF ranking `rows` not empty) -> `add-members` (HTTP PUT `/groups/{group.id}/members.json`, `usernames` = every `rows[].u` comma-separated, retry 3, continue on error so the ranking write is never affected). It only adds members to the `paper-trading` group (so the daily summary reaches traders); it never removes anyone.
+1. `read-all-pages`, `merge-pages`: same as ranking.
+2. `summary` (Code): full `dist/n8n-daily.js` + glue; returns no item when fewer than 3 people traded in the last 24 h (a smaller count would point at people).
+3. `daily-topic` (Code): reads `topicId` from workflow static data and returns `{ raw, topicId }`.
+4. `has-topic?` (IF): `topicId` is a number.
+   - true: `post-summary` (HTTP POST `https://comunidad.criptonautas.co/posts.json`, `{topic_id, raw}`) as system replies in the existing message.
+   - false: `create-pm` (HTTP POST `/posts.json`, `archetype: private_message`, `target_recipients: paper-trading`, title `paper trading: resumen diario`, retry 3), then `save-topic` (Code) stores the new `topic_id` in static data.
 
-## paper-trading-daily
-
-Trigger: cron `5 12 * * *` UTC.
-
-1. `topic` (Set): `topic_id = 7161`. **Change the topic id here too.**
-2. `read-all-pages`, `merge-pages`: same as ranking.
-3. `summary` (Code): full `dist/n8n-daily.js` + glue; returns no item when fewer than 3 people traded in the last 24 h (a smaller count would point at people).
-4. `post-summary` (HTTP POST `https://comunidad.criptonautas.co/posts.json`, `{topic_id, raw}`) as system.
-
-When the group message exists: set its id in `topic` in both workflows (ranking and daily), then publish `paper-trading-daily`.
+The first summary creates the group message; later ones reply in it. The topic id lives in workflow static data, which only persists for production runs (manual runs do not save it). To start a new thread, clear the static data or delete `topicId`.
 
 ## Code node paste procedure
 
