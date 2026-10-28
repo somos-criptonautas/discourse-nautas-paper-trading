@@ -143,7 +143,14 @@
     const box = $("ranking"); box.innerHTML = "";
     const rows = (ui.ranking && ui.ranking.rows) || [];
     if (!rows.length) { box.appendChild(item("el ranking aparece cuando n8n lo publica, cada hora.", "", "")); return; }
-    rows.forEach((r, i) => { const d = item((i + 1) + ". " + r.u, (r.r >= 0 ? "+" : "") + r.r + "%", r.resets ? r.resets + (r.resets === 1 ? " reinicio" : " reinicios") : ""); if (r.u === ui.user) d.classList.add("me"); box.appendChild(d); });
+    const shown = ui.rankAll ? rows : rows.slice(0, 10);
+    shown.forEach((r, i) => { const d = item((i + 1) + ". " + r.u, (r.r >= 0 ? "+" : "") + r.r + "%", r.resets ? r.resets + (r.resets === 1 ? " reinicio" : " reinicios") : ""); if (r.u === ui.user) d.classList.add("me"); box.appendChild(d); });
+    if (rows.length > 10) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "pt-more";
+      b.textContent = ui.rankAll ? "ver menos" : "ver más (" + (rows.length - 10) + ")";
+      b.onclick = () => { ui.rankAll = !ui.rankAll; renderRanking(); };
+      box.appendChild(b);
+    }
   }
 
   // Under the form: when the order fills, rough size at the reference price, 2x liquidation note

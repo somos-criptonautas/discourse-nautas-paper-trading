@@ -19,7 +19,8 @@ body { font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 .pt { max-width: 1180px; min-height: 100%; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 .pt-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
 .pt-head h1 { font-size: 21px; margin: 0; font-weight: 600; }
-.pt h2 { font-size: 17px; margin: 0; font-weight: 600; }
+/* Section labels: uppercase and bold, the copy itself stays lowercase */
+.pt h2, details.pt-card summary, .pt-row span:first-child { font-size: 14px; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .pt-meta { margin: 0; color: var(--muted); font-size: 15px; }
 .pt-note { margin: 0; font-size: 15px; color: var(--muted); padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; }
 .pt-card { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
@@ -30,10 +31,10 @@ body { font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 .pt-ranking { order: 99; }
 .pt-actions { order: 100; }
 .pt-divider { width: 50%; margin: 4px auto; border: 0; border-top: 1px solid var(--border-strong); }
-details.pt-card summary { cursor: pointer; font-weight: 600; }
+details.pt-card summary { cursor: pointer; }
 details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-row { display: flex; align-items: baseline; gap: 12px; }
-.pt-row span:first-child { color: var(--muted); min-width: 70px; }
+.pt-row span:first-child { color: var(--muted); min-width: 80px; }
 .pt-row strong { font-size: 20px; }
 .pt-perf.up { color: var(--good); } .pt-perf.down { color: var(--bad); }
 .pt-chartbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -101,3 +102,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .pt-chart .zone.price { cursor: ns-resize; }
 .pt-chart .zone.time { cursor: ew-resize; }
 .pt-chart .zone.pan { cursor: grab; }
+
+.pt-more { font: inherit; font-size: 14px; align-self: center; padding: 4px 12px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--muted); border: 1px solid var(--border-strong); }
+.pt-more:hover { color: var(--text); border-color: var(--muted); }

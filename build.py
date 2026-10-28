@@ -46,7 +46,7 @@ for w in range(27):
         keys.append({"key": f"candles-{d.tm_year}-W{int(time.strftime('%V', d)):02d}-{group}", "user_id": -1, "value": json.dumps(v, separators=(",", ":"))})
 assert all(len(k["value"]) < 5000 for k in keys), max(len(k["value"]) for k in keys)
 keys.append({"key": "now", "user_id": -1, "value": json.dumps({"t": now, **base})})
-keys.append({"key": "ranking", "user_id": -1, "value": json.dumps({"t": now, "rows": [{"u": "satoshi", "r": 12.5, "resets": 0}, {"u": "preview", "r": -3.1, "resets": 1}]})})
+keys.append({"key": "ranking", "user_id": -1, "value": json.dumps({"t": now, "rows": [{"u": "satoshi", "r": 12.5, "resets": 0}] + [{"u": f"nauta{i}", "r": round(10 - i * 0.9, 1), "resets": i % 3} for i in range(12)] + [{"u": "preview", "r": -3.1, "resets": 1}]})})
 iso = lambda s: time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(s))
 mine = [
     {"key": f"o-{(now - 5 * 86400) * 1000}", "user_id": 7, "created_at": iso(now - 5 * 86400), "value": json.dumps({"asset": "btc", "side": "buy", "usd": 100, "lev": 2, "sl": base["btc"] * 0.8})},
