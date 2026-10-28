@@ -2,13 +2,13 @@
    El foro cambia de esquema con prefers-color-scheme; el artifact hace lo mismo. */
 :root {
   --bg: #181719; --surface: #282529; --border: #353535; --text: #f1f1f1; --muted: #9d9d9d;
-  --accent: #c89dff; --on-accent: #181719; --good: #6dc08f; --bad: #ff8da5; --up-fill: #f1f1f1; --up-stroke: #f1f1f1; --down-fill: #181719; --down-stroke: #9d9d9d; --track: #353535;
+  --accent: #c89dff; --on-accent: #181719; --good: #6dc08f; --bad: #ff8da5; --up-fill: #f1f1f1; --up-stroke: #f1f1f1; --down-fill: #181719; --down-stroke: #9d9d9d; --track: #353535; --border-strong: #4a4a4c; --btn-bg: #2f2c31;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #ffffff; --surface: #f8f8f8; --border: #e8e8e8; --text: #1a1a1a; --muted: #6e6e6e;
-    --accent: #5814ea; --on-accent: #ffffff; --good: #1f7a5c; --bad: #9e1b27; --up-fill: #ffffff; --up-stroke: #1a1a1a; --down-fill: #1a1a1a; --down-stroke: #1a1a1a; --track: #e8e8e8;
+    --accent: #5814ea; --on-accent: #ffffff; --good: #1f7a5c; --bad: #9e1b27; --up-fill: #ffffff; --up-stroke: #1a1a1a; --down-fill: #1a1a1a; --down-stroke: #1a1a1a; --track: #e8e8e8; --border-strong: #cfcfcf; --btn-bg: #f1f1f1;
     color-scheme: light;
   }
 }
@@ -22,7 +22,7 @@ body { font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 .pt h2 { font-size: 17px; margin: 0; font-weight: 600; }
 .pt-meta { margin: 0; color: var(--muted); font-size: 15px; }
 .pt-note { margin: 0; font-size: 15px; color: var(--muted); padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; }
-.pt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.pt-card { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
 details.pt-card summary { cursor: pointer; font-weight: 600; }
 details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-row { display: flex; align-items: baseline; gap: 12px; }
@@ -34,9 +34,10 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-zoom { margin-left: auto; }
 .pt-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pt-zoom svg { width: 16px; height: 16px; vertical-align: -3px; }
-.pt-chartbar select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.pt-chartbar select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); }
 .pt-quick { display: flex; flex-wrap: wrap; gap: 6px; }
-.pt-zoom button, .pt-quick button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--text); border: 1px solid var(--border); }
+.pt-zoom button, .pt-pan button, .pt-quick button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: var(--btn-bg); color: var(--text); border: 1px solid var(--border-strong); }
+.pt-zoom button:hover, .pt-pan button:hover, .pt-quick button:hover, .pt-btn:not(.pt-primary):hover { border-color: var(--muted); }
 .pt-chart svg { display: block; }
 .pt-chart .grid { stroke: var(--border); }
 .pt-chart .axis { fill: var(--muted); font-size: 11px; }
@@ -60,20 +61,20 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-chart .tp { stroke: var(--good); fill: var(--good); }
 .pt-chart .sl, .pt-chart .liq { stroke: var(--bad); fill: var(--bad); }
 .pt-list { display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
-.pt-list .item { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; }
+.pt-list .item { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: 10px; }
 .pt-list .item small { color: var(--muted); grid-column: 1 / -1; }
 .pt-list .item.me { border-color: var(--accent); }
 .pt-list .close { font: inherit; font-size: 14px; padding: 4px 10px; border-radius: 8px; cursor: pointer; background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); font-weight: 600; grid-column: 1 / -1; margin-top: 4px; }
 .pt-form { display: flex; flex-direction: column; gap: 10px; }
 .pt-form label { display: flex; flex-direction: column; gap: 4px; font-size: 15px; color: var(--muted); }
-.pt-form input, .pt-form select { font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.pt-form input, .pt-form select { font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); }
 .pt-lev { border: 0; padding: 0; margin: 0; display: flex; gap: 14px; font-size: 15px; }
 .pt-lev legend { color: var(--muted); padding: 0; margin-bottom: 4px; }
 .pt-lev label { flex-direction: row; align-items: center; gap: 6px; color: var(--text); }
 .pt-hint { margin: 0; font-size: 14px; color: var(--muted); }
 .pt-err { margin: 0; font-size: 15px; color: var(--bad); }
 .pt-actions { display: flex; flex-direction: column; gap: 6px; }
-.pt-btn { font: inherit; font-size: 16px; padding: 12px 14px; border-radius: 10px; cursor: pointer; background: transparent; color: var(--text); border: 1px solid var(--border); }
+.pt-btn { font: inherit; font-size: 16px; padding: 12px 14px; border-radius: 10px; cursor: pointer; background: var(--btn-bg); color: var(--text); border: 1px solid var(--border-strong); }
 .pt-primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
 .pt-btn:disabled { opacity: .6; cursor: default; }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
