@@ -48,3 +48,13 @@ const bobReset = kv(2, "bob", "reset-9", "1", T0 + 5 * R.CANDLE);
 r = K.rankAll([ana, bobReset], cnd, NOW, [{ user_id: 2, key: "o-2", created_at: bob.created_at }]);
 assert.deepStrictEqual(plain(r.flagged), []);
 console.log("n8n ranking ok");
+
+// --- daily ---
+const D = load("daily");
+assert.strictEqual(D.dailySummary([], cnd, NOW), "");
+let txt = D.dailySummary([ana, bob], cnd, T0 + 2 * R.CANDLE + 10); // candle 1 is closed by now: both buys and bob's SL fall within the last 24h
+assert.match(txt, /2 compras/); assert.match(txt, /1 stop-loss/); assert.match(txt, /2 participantes/);
+assert.match(txt, /^\*\*paper trading, últimas 24h:\*\*/);
+assert.doesNotMatch(txt, /ana|bob/);
+assert.strictEqual(D.dailySummary([ana, bob], cnd, T0 + 3 * 86400), ""); // nothing in the last 24h
+console.log("n8n daily ok");
