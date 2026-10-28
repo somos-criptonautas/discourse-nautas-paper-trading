@@ -42,7 +42,8 @@
     if (!ui.user) note("inicia sesión en el foro para operar. sin sesión se ven el gráfico y el ranking.");
   }
 
-  function nowSec() { return Math.floor(Date.now() / 1000); }
+  // A fast client clock must not close candles early: never more than 5 min past the server snapshot
+  function nowSec() { return Math.min(Math.floor(Date.now() / 1000), ui.now && Number.isFinite(ui.now.t) ? ui.now.t + 300 : Infinity); }
 
   function render() {
     const ok = ui.candles && R.ASSETS.some((a) => ui.candles[a].length);
