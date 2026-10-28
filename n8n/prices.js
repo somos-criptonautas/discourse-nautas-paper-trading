@@ -8,6 +8,7 @@ function weeklyKeys(ohlc, now, backfill) {
   const out = [];
   for (const t0 of [...weeks].sort((p, q) => p - q)) {
     for (const g of Object.keys(GROUPS)) {
+      if (GROUPS[g].some((x) => !ohlc[x] || !ohlc[x].length)) continue; // a failed pair would blank the whole group key
       const v = { t0 };
       for (const a of GROUPS[g]) {
         const rows = [];
