@@ -17,6 +17,12 @@ function rankAll(keyValues, candles, now, seen) {
     const rt = ts(row.created_at); // unparseable → flag (fail closed)
     if ((isNaN(rt) || rt > lastReset) && !flagged.includes(row.user_id)) flagged.push(row.user_id);
   }
+  // Discourse keeps created_at when a key is overwritten: a moved (or unparseable) updated_at after the last reset is an edited order
+  for (const [uid, u] of byUser) {
+    const lastReset = Math.max(0, ...u.kvs.filter((k) => /^reset-/.test(k.key)).map((k) => ts(k.created_at)).filter((t) => !isNaN(t)));
+    const edited = u.kvs.some((k) => /^(o|reset)-\d+$/.test(k.key) && k.updated_at != null && ts(k.created_at) > lastReset && ts(k.updated_at) !== ts(k.created_at));
+    if (edited && !flagged.includes(uid)) flagged.push(uid);
+  }
   const rows = [];
   for (const [uid, u] of byUser) {
     if (flagged.includes(uid) || !u.name) continue;

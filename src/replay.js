@@ -3,6 +3,7 @@ const ASSETS = ["btc", "eth", "paxg", "xmr", "xno", "trx"];
 const GROUPS = { a: ["btc", "eth", "paxg"], b: ["xmr", "xno", "trx"] };
 const CANDLE = 4 * 3600;
 const START_USD = 1000, MIN_USD = 10, LIQ_PCT = 0.45, SYSTEM_ID = -1;
+const MODIFIED = "orden modificada después de enviarla";
 
 function weekStart(sec) {
   const d = new Date(sec * 1000);
@@ -39,14 +40,16 @@ function parseOrder(kv) {
   if (!Number.isFinite(created)) return null;
   if (/^reset-\d+$/.test(kv.key)) return { id: kv.key, created, reset: true };
   if (!/^o-\d+$/.test(kv.key)) return null;
+  // Discourse keeps created_at on overwrite and bumps updated_at; an unparseable updated_at counts as modified
+  const modified = kv.updated_at != null && Date.parse(kv.updated_at) !== Date.parse(kv.created_at);
   let v; try { v = JSON.parse(kv.value); } catch (e) { return null; }
   if (!v || typeof v !== "object") return null;
   const num = (x) => (x === undefined || x === null ? undefined : Number.isFinite(x) && x > 0 ? x : NaN);
-  if (v.side === "sell") return typeof v.of === "string" ? { id: kv.key, created, side: "sell", of: v.of } : null;
+  if (v.side === "sell") return typeof v.of === "string" ? { id: kv.key, created, side: "sell", of: v.of, modified } : null;
   if (v.side !== "buy" || !ASSETS.includes(v.asset)) return null;
   const usd = num(v.usd), lev = v.lev === undefined ? 1 : v.lev, tp = num(v.tp), sl = num(v.sl);
   if (!(usd >= MIN_USD) || (lev !== 1 && lev !== 2) || Number.isNaN(tp) || Number.isNaN(sl)) return null;
-  return { id: kv.key, created, side: "buy", asset: v.asset, usd, lev, tp, sl };
+  return { id: kv.key, created, side: "buy", asset: v.asset, usd, lev, tp, sl, modified };
 }
 
 // Replays every order against the candles. Fills (liq, sl, tp) happen inside a candle; orders fill at its close.
@@ -83,6 +86,7 @@ function replay(keyValues, candles, now) {
       const o = orders[qi];
       const tc = t + CANDLE;
       if (o.created < t) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: "Sin velas publicadas para esa fecha" }); continue; }
+      if (o.modified) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: MODIFIED }); continue; }
       if (o.side === "sell") {
         const p = st.positions.find((x) => x.id === o.of);
         if (!p) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: "La posición ya estaba cerrada" }); continue; }
@@ -104,6 +108,7 @@ function replay(keyValues, candles, now) {
     const o = orders[qi];
     const lastT = times.length ? times[times.length - 1] : null;
     if (lastT === null || o.created < lastT) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: "Sin velas publicadas para esa fecha" }); continue; }
+    if (o.modified) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: MODIFIED }); continue; }
     st.pending.push({ ...o, fillAt: Math.floor(o.created / CANDLE) * CANDLE + CANDLE });
   }
   for (const p of st.positions) {

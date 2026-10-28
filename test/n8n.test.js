@@ -64,6 +64,17 @@ assert.deepStrictEqual(plain(r.flagged), [2]);
 // (e) same key name, different created_at (deleted and re-created) flags
 r = K.rankAll([ana, bob], cnd, NOW, [gone(2, "o-2", T0 + 30)]);
 assert.deepStrictEqual(plain(r.flagged), [2]);
+// (f) an order overwritten after the last reset (updated_at moved) flags; equal updated_at does not
+const edited = (k, sec) => ({ ...k, updated_at: new Date(sec * 1000).toISOString() });
+r = K.rankAll([edited(ana, T0 + 60), edited(bob, T0 + 600)], cnd, NOW, []);
+assert.deepStrictEqual(plain(r.flagged), [2]);
+assert.deepStrictEqual(plain(r.ranking.rows.map((x) => x.u)), ["ana"]);
+// (g) unparseable updated_at flags
+r = K.rankAll([ana, { ...bob, updated_at: "garbage" }], cnd, NOW, []);
+assert.deepStrictEqual(plain(r.flagged), [2]);
+// (h) an edit before the last reset no longer counts
+r = K.rankAll([ana, edited(bob, T0 + 600), bobReset], cnd, NOW, []);
+assert.deepStrictEqual(plain(r.flagged), []);
 console.log("n8n ranking ok");
 
 // --- daily ---

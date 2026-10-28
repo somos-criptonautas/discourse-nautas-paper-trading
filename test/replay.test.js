@@ -112,6 +112,20 @@ assert.deepStrictEqual([s.history[1].kind, s.history[1].price, s.balance], ["sl"
   assert.strictEqual(s.positions.length, 1);
 }
 
+// An order overwritten after sending (updated_at moved) never executes; equal or absent updated_at is fine
+{
+  const [o] = kvs([[at(0), buy(900)]]);
+  s = R.replay([{ ...o, updated_at: new Date(at(1)).toISOString() }], candles([[10, 9, 10], [10, 9, 10]]), NOW);
+  assert.deepStrictEqual([s.history.map((h) => h.kind), s.history[0].why, s.balance], [["invalid"], "orden modificada después de enviarla", 1000]);
+  s = R.replay([{ ...o, updated_at: "garbage" }], candles([[10, 9, 10]]), NOW);
+  assert.deepStrictEqual(s.history.map((h) => h.kind), ["invalid"]);
+  s = R.replay([{ ...o, updated_at: o.created_at }], candles([[10, 9, 10]]), NOW);
+  assert.deepStrictEqual(s.history.map((h) => h.kind), ["buy"]);
+  const [late] = kvs([[at(10), buy(100)]]); // still pending when modified: invalid too, not pending
+  s = R.replay([{ ...late, updated_at: new Date(at(10, 600)).toISOString() }], candles([[10, 9, 10]]), NOW + 100);
+  assert.deepStrictEqual([s.pending.length, s.history.map((h) => h.kind)], [0, ["invalid"]]);
+}
+
 // checkOrder: live form validation (equality with the reference price is rejected)
 assert.strictEqual(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, 10, 1000, 3), "");
 assert.match(R.checkOrder({ asset: "btc", usd: 5, lev: 1 }, 10, 1000, 3), /10 USD/);
