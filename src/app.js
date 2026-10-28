@@ -59,7 +59,7 @@
     $("perf").className = "pt-perf " + (s.perf >= 0 ? "up" : "down");
     renderChart(); prefill(); renderPositions(); renderPending(); renderHistory(); renderRanking();
     $("resets").textContent = s.resets ? "reiniciaste " + s.resets + (s.resets === 1 ? " vez." : " veces.") : "";
-    validate();
+    validate(); hint();
     $("reset").disabled = !ui.user;
   }
 
@@ -147,9 +147,48 @@
     rows.forEach((r, i) => { const d = item((i + 1) + ". " + r.u, (r.r >= 0 ? "+" : "") + r.r + "%", r.resets ? r.resets + (r.resets === 1 ? " reinicio" : " reinicios") : ""); if (r.u === ui.user) d.classList.add("me"); box.appendChild(d); });
   }
 
-  async function close(p) { /* Task 6 */ }
-  async function order(ev) { ev.preventDefault(); /* Task 6 */ clearTouched(); }
-  async function reset() { /* Task 6 */ }
+  // Under the form: when the order fills, rough size at the reference price, 2x liquidation note
+  function hint() {
+    if (!ui.state) return;
+    const f = fields(), ref = refPrice();
+    const next = (Math.floor(nowSec() / R.CANDLE) + 1) * R.CANDLE;
+    let t = "se ejecuta al cierre de la vela de 4h, a las " + when(next) + ".";
+    if (ref && f.usd >= R.MIN_USD) t += " unas " + ((f.usd * f.lev) / ref).toPrecision(4) + " " + ui.asset.toUpperCase() + " a precio de referencia " + C.fmtPrice(ref) + ".";
+    if (f.lev === 2 && ref) t += " liquidación cerca de " + C.fmtPrice(ref * (1 - R.LIQ_PCT)) + ". sin intereses: es una simplificación.";
+    $("hint").textContent = t;
+  }
+
+  async function write(key, value, okText) {
+    $("submit").disabled = true;
+    try { await store.set(key, JSON.stringify(value)); }
+    catch (e) { note("no se pudo guardar. revisa tu conexión e inténtalo de nuevo."); validate(); return false; }
+    note(okText);
+    await load(); render(); return true;
+  }
+
+  async function order(ev) {
+    ev.preventDefault();
+    const f = fields();
+    if (R.checkOrder(f, refPrice(), ui.state.balance, ui.mine.length)) return validate();
+    const v = { asset: f.asset, side: "buy", usd: f.usd, lev: f.lev };
+    if (f.tp !== undefined) v.tp = f.tp;
+    if (f.sl !== undefined) v.sl = f.sl;
+    if (await write("o-" + Date.now(), v, "orden guardada. se ejecuta al cierre de la vela.")) { $("order").reset(); clearTouched(); render(); }
+  }
+
+  async function close(p) {
+    if (ui.state.pending.some((o) => o.of === p.id)) return note("ya hay un cierre pendiente para esa posición.");
+    await write("o-" + Date.now(), { side: "sell", of: p.id }, "cierre guardado. se ejecuta al cierre de la vela.");
+  }
+
+  async function reset() {
+    if (!confirm("reiniciamos con 1.000 USD. las posiciones abiertas se pierden y el ranking mostrará un reinicio más. ¿seguimos?")) return;
+    try { await store.set("reset-" + Date.now(), "1"); } catch (e) { return note("no se pudo reiniciar. inténtalo de nuevo."); }
+    // Only o-* keys go; markers stay so server timestamps keep the reset honest
+    for (const k of ui.mine.filter((k) => /^o-/.test(k.key))) { try { await store.delete(k.key); } catch (e) {} }
+    note("reiniciamos con 1.000 USD.");
+    await load(); render();
+  }
 
   const opts = R.ASSETS.map((a) => `<option value="${a}">${pair(a)}</option>`).join("");
   $("sel-asset").innerHTML = opts;
@@ -160,8 +199,8 @@
     const el = $(id);
     if (el.value === "" && el.placeholder !== "" && Number.isFinite(+el.placeholder)) { el.value = el.placeholder; el.dataset.touched = "1"; validate(); }
   });
-  for (const id of ["f-usd", "f-tp", "f-sl"]) $(id).addEventListener("input", validate);
-  for (const r of document.querySelectorAll("input[name=lev]")) r.addEventListener("change", validate);
+  for (const id of ["f-usd", "f-tp", "f-sl"]) $(id).addEventListener("input", () => { validate(); hint(); });
+  for (const r of document.querySelectorAll("input[name=lev]")) r.addEventListener("change", () => { validate(); hint(); });
 
   // Drag gestures on the chart zones; every move is computed from the values at pointerdown
   let drag = null, lastKind = null; // pointer capture retargets click/dblclick to #chart, so lastKind remembers the zone from pointerdown
@@ -195,6 +234,10 @@
   let lastWheel = 0;
   $("chart").addEventListener("wheel", (e) => { e.preventDefault(); if (Math.abs(e.deltaY) < 20 || e.timeStamp - lastWheel < 150) return; lastWheel = e.timeStamp; zoom(e.deltaY > 0 ? 2 : 0.5); }, { passive: false });
   document.querySelector(".pt-chartbar").onclick = (e) => { const b = e.target.closest("button"), z = b && b.dataset.z; if (z === "in") zoom(0.5); else if (z === "out") zoom(2); else if (z) pan(z === "fwd" ? 1 : -1); };
+  for (const b of document.querySelectorAll("#order .pt-quick button")) b.onclick = () => {
+    if (!ui.state) return;
+    $("f-usd").value = Math.max(R.MIN_USD, Math.floor((ui.state.balance * b.dataset.pct) / 100)); validate(); hint();
+  };
   $("order").onsubmit = order;
   $("reset").onclick = reset;
   load().then(render);
