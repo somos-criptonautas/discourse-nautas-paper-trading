@@ -23,6 +23,8 @@ body { font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 .pt-meta { margin: 0; color: var(--muted); font-size: 15px; }
 .pt-note { margin: 0; font-size: 15px; color: var(--muted); padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; }
 .pt-card { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.pt-card--tint { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.pt-divider { width: 50%; margin: 4px auto; border: 0; border-top: 1px solid var(--border-strong); }
 details.pt-card summary { cursor: pointer; font-weight: 600; }
 details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-row { display: flex; align-items: baseline; gap: 12px; }
@@ -30,14 +32,14 @@ details.pt-card[open] summary { margin-bottom: 6px; }
 .pt-row strong { font-size: 20px; }
 .pt-perf.up { color: var(--good); } .pt-perf.down { color: var(--bad); }
 .pt-chartbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pt-pan, .pt-zoom { display: flex; gap: 6px; }
+.pt-zoom { display: flex; gap: 6px; }
 .pt-zoom { margin-left: auto; }
 .pt-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pt-zoom svg { width: 16px; height: 16px; vertical-align: -3px; }
 .pt-chartbar select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); }
 .pt-quick { display: flex; flex-wrap: wrap; gap: 6px; }
-.pt-zoom button, .pt-pan button, .pt-quick button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: var(--btn-bg); color: var(--text); border: 1px solid var(--border-strong); }
-.pt-zoom button:hover, .pt-pan button:hover, .pt-quick button:hover, .pt-btn:not(.pt-primary):hover { border-color: var(--muted); }
+.pt-zoom button, .pt-quick button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; cursor: pointer; background: var(--btn-bg); color: var(--text); border: 1px solid var(--border-strong); }
+.pt-zoom button:hover, .pt-quick button:hover, .pt-btn:not(.pt-primary):hover { border-color: var(--muted); }
 .pt-chart svg { display: block; }
 .pt-chart .grid { stroke: var(--border); }
 .pt-chart .axis { fill: var(--muted); font-size: 11px; }

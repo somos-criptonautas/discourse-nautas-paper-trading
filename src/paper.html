@@ -4,17 +4,15 @@
     <p class="pt-meta" id="meta" aria-live="polite"></p>
   </header>
   <p class="pt-note" id="note" hidden></p>
-  <section class="pt-card">
+  <section class="pt-card pt-card--tint">
     <div class="pt-row"><span>saldo</span><strong id="balance">—</strong></div>
     <div class="pt-row"><span>cartera</span><strong id="equity">—</strong><span class="pt-perf" id="perf"></span></div>
-  </section>
-  <section class="pt-card">
+    <hr class="pt-divider">
     <h2>posiciones abiertas</h2>
     <div id="positions" class="pt-list"></div>
   </section>
   <section class="pt-card">
     <div class="pt-chartbar">
-      <span class="pt-pan"><button type="button" data-z="back" aria-label="mover atrás">‹</button><button type="button" data-z="fwd" aria-label="mover adelante">›</button></span>
       <span class="pt-pick"><select id="sel-asset" aria-label="par"></select><span id="now-price" class="pt-meta"></span><select id="sel-range" aria-label="rango"><option value="42">1 semana</option><option value="180">1 mes</option><option value="1092">6 meses</option><option value="custom" disabled hidden>personalizado</option></select></span>
       <span class="pt-zoom"><button type="button" data-z="out" aria-label="alejar"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4.5 4.5"/><path d="M4.5 6.5h4"/></svg></button><button type="button" data-z="in" aria-label="acercar"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4.5 4.5"/><path d="M4.5 6.5h4M6.5 4.5v4"/></svg></button></span>
     </div>
@@ -38,7 +36,7 @@
     <div id="pending" class="pt-list"></div>
   </section>
   <details class="pt-card"><summary>historial</summary><div id="history" class="pt-list"></div></details>
-  <details class="pt-card"><summary>ranking de la comunidad</summary><div id="ranking" class="pt-list"></div></details>
+  <details class="pt-card pt-card--tint"><summary>ranking de la comunidad</summary><div id="ranking" class="pt-list"></div></details>
   <section class="pt-actions">
     <button type="button" class="pt-btn" id="reset">reiniciar con 1.000 USD</button>
     <p class="pt-meta" id="resets"></p>

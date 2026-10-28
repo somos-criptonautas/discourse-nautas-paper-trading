@@ -74,7 +74,6 @@
     light ? renderChart() : render(); // light: only the chart (used while dragging)
   }
   function zoom(f) { setView(ui.view.count * f, ui.view.end); }
-  function pan(dir) { const n = closed().length, e = (ui.view.end === null ? n : ui.view.end) + dir * Math.max(1, Math.round(ui.view.count / 4)); setView(ui.view.count, e); }
 
   function renderChart() {
     $("sel-asset").value = ui.asset;
@@ -213,10 +212,16 @@
   for (const r of document.querySelectorAll("input[name=lev]")) r.addEventListener("change", () => { validate(); hint(); });
 
   // Drag gestures on the chart zones; every move is computed from the values at pointerdown
-  let drag = null, lastKind = null; // pointer capture retargets click/dblclick to #chart, so lastKind remembers the zone from pointerdown
+  let drag = null, lastKind = null, pinch = null; const ptrs = new Map(); // ptrs: active pointers by id, pinch: two-finger zoom gesture
+   // pointer capture retargets click/dblclick to #chart, so lastKind remembers the zone from pointerdown
   const chartEl = $("chart");
   chartEl.addEventListener("pointerdown", (e) => {
     lastKind = null;
+    const z0 = e.target.closest && e.target.closest(".zone");
+    if (z0 && !z0.classList.contains("price")) {
+      ptrs.set(e.pointerId, e.clientX);
+      if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.abs(a - b) || 1, count: ui.view.count, end: ui.view.end === null ? closed().length : ui.view.end }; drag = null; chartEl.setPointerCapture(e.pointerId); return; }
+    }
     const z = e.target.closest && e.target.closest(".zone"), svg = chartEl.querySelector("svg");
     if (e.button !== 0 || !z || !svg) return;
     const n = closed().length, v = ui.view, all = closed(), end = v.end === null ? n : v.end, list = all.slice(Math.max(0, end - v.count), end);
@@ -226,6 +231,8 @@
     chartEl.setPointerCapture(e.pointerId);
   });
   chartEl.addEventListener("pointermove", (e) => {
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, e.clientX);
+    if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; setView(pinch.count / ((Math.abs(a - b) || 1) / pinch.d), pinch.end, true); return; }
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y, v = ui.view;
     if (drag.kind === "pan") {
@@ -234,7 +241,7 @@
     } else if (drag.kind === "time") setView(drag.count * Math.pow(1.1, -dx / 40), drag.end, true);
     else { v.yScale = { factor: Math.min(20, Math.max(0.1, drag.factor * Math.pow(1.1, dy / 40))), offset: drag.offset }; renderChart(); }
   });
-  const endDrag = () => { drag = null; };
+  const endDrag = (e) => { ptrs.delete(e.pointerId); if (pinch) { pinch = null; ptrs.clear(); } drag = null; };
   chartEl.addEventListener("pointerup", endDrag);
   chartEl.addEventListener("pointercancel", endDrag);
   chartEl.addEventListener("dblclick", () => {
@@ -243,7 +250,7 @@
   $("sel-range").onchange = (e) => { if (e.target.value) setView(+e.target.value, null); };
   let lastWheel = 0;
   $("chart").addEventListener("wheel", (e) => { e.preventDefault(); if (Math.abs(e.deltaY) < 20 || e.timeStamp - lastWheel < 150) return; lastWheel = e.timeStamp; zoom(e.deltaY > 0 ? 2 : 0.5); }, { passive: false });
-  document.querySelector(".pt-chartbar").onclick = (e) => { const b = e.target.closest("button"), z = b && b.dataset.z; if (z === "in") zoom(0.5); else if (z === "out") zoom(2); else if (z) pan(z === "fwd" ? 1 : -1); };
+  document.querySelector(".pt-chartbar").onclick = (e) => { const b = e.target.closest("button"), z = b && b.dataset.z; if (z === "in") zoom(0.5); else if (z === "out") zoom(2); };
   for (const b of document.querySelectorAll("#order .pt-quick button")) b.onclick = () => {
     if (!ui.state) return;
     $("f-usd").value = Math.max(R.MIN_USD, Math.floor((ui.state.balance * b.dataset.pct) / 100)); validate(); hint();
