@@ -47,6 +47,23 @@ assert.deepStrictEqual(plain(r.flagged), [2]);
 const bobReset = kv(2, "bob", "reset-9", "1", T0 + 5 * R.CANDLE);
 r = K.rankAll([ana, bobReset], cnd, NOW, [{ user_id: 2, key: "o-2", created_at: bob.created_at }]);
 assert.deepStrictEqual(plain(r.flagged), []);
+// fail-closed cases
+const gone = (uid, key, sec) => ({ user_id: uid, key, created_at: new Date(sec * 1000).toISOString() });
+// (a) vanished key newer than a present reset marker
+r = K.rankAll([ana, bobReset], cnd, NOW, [gone(2, "o-3", T0 + 6 * R.CANDLE)]);
+assert.deepStrictEqual(plain(r.flagged), [2]);
+// (b) vanished reset marker with no later marker
+r = K.rankAll([ana, bob], cnd, NOW, [gone(2, "reset-5", T0 + 60)]);
+assert.deepStrictEqual(plain(r.flagged), [2]);
+// (c) numeric ms created_at equal to the key's time is present
+r = K.rankAll([ana, bob], cnd, NOW, [{ user_id: 2, key: "o-2", created_at: (T0 + 60) * 1000 }]);
+assert.deepStrictEqual(plain(r.flagged), []);
+// (d) garbage created_at flags
+r = K.rankAll([ana, bob], cnd, NOW, [{ user_id: 2, key: "o-9", created_at: "garbage" }]);
+assert.deepStrictEqual(plain(r.flagged), [2]);
+// (e) same key name, different created_at (deleted and re-created) flags
+r = K.rankAll([ana, bob], cnd, NOW, [gone(2, "o-2", T0 + 30)]);
+assert.deepStrictEqual(plain(r.flagged), [2]);
 console.log("n8n ranking ok");
 
 // --- daily ---
