@@ -26,3 +26,25 @@ assert.deepStrictEqual(plain(out.map((o) => o.key)), ["candles-2026-W41-a", "can
 assert.ok(out.every((o) => o.value.length < 5000));
 assert.deepStrictEqual(plain(P.nowFrom(ohlc, mon + 4 * H)), { t: mon + 4 * H, btc: 11, eth: 1.5 });
 console.log("n8n prices ok");
+
+// --- ranking ---
+const K = load("ranking");
+const T0 = mon, NOW = T0 + 10 * R.CANDLE;
+const cnd = { ...Object.fromEntries(R.ASSETS.map((x) => [x, []])), btc: [[10, 9, 10], [13, 9.5, 12]].map((x, i) => ({ t: T0 + i * R.CANDLE, h: x[0], l: x[1], c: x[2] })) };
+const kv = (uid, u, key, value, sec) => ({ user_id: uid, user: { username: u }, key, value, created_at: new Date(sec * 1000).toISOString() });
+const ana = kv(1, "ana", "o-1", JSON.stringify({ asset: "btc", side: "buy", usd: 100, lev: 1 }), T0 + 60);      // +20 USD → +2%
+const bob = kv(2, "bob", "o-2", JSON.stringify({ asset: "btc", side: "buy", usd: 100, lev: 2, sl: 9.8 }), T0 + 60); // SL → -4 USD → -0.4%
+const cat = kv(3, "cat", "reset-1", "1", T0 + 60); // never traded: not ranked
+let r = K.rankAll([ana, bob, cat], cnd, NOW, []);
+assert.deepStrictEqual(plain(r.ranking.rows), [{ u: "ana", r: 2, resets: 0 }, { u: "bob", r: -0.4, resets: 0 }]);
+assert.strictEqual(r.ranking.t, NOW);
+assert.deepStrictEqual(plain(r.seenNow.map((s) => s.key).sort()), ["o-1", "o-2", "reset-1"]);
+// bob deleted a losing order seen before → flagged and out
+r = K.rankAll([ana], cnd, NOW, [{ user_id: 2, key: "o-2", created_at: bob.created_at }, { user_id: 1, key: "o-1", created_at: ana.created_at }]);
+assert.deepStrictEqual(plain(r.ranking.rows.map((x) => x.u)), ["ana"]);
+assert.deepStrictEqual(plain(r.flagged), [2]);
+// A key older than the user's last reset may vanish: that is a legit reset
+const bobReset = kv(2, "bob", "reset-9", "1", T0 + 5 * R.CANDLE);
+r = K.rankAll([ana, bobReset], cnd, NOW, [{ user_id: 2, key: "o-2", created_at: bob.created_at }]);
+assert.deepStrictEqual(plain(r.flagged), []);
+console.log("n8n ranking ok");
