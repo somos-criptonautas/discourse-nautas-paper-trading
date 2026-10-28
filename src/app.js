@@ -36,6 +36,11 @@
       ui.ranking = rkKv ? JSON.parse(rkKv.value) : null;
       const me = sys.users.find((u) => u.username === ui.user);
       ui.mine = me ? sys.key_values.filter((k) => k.user_id === me.id) : [];
+      // Keys from past seasons are ignored by the ranking: drop them so they never eat the 100-key budget
+      const cut = R.seasonStart(nowSec()) * 1000;
+      for (const k of ui.mine.filter((k) => /^(o|reset)-\d+$/.test(k.key) && Date.parse(k.created_at) < cut)) {
+        try { await store.delete(k.key); ui.mine = ui.mine.filter((m) => m !== k); } catch (e) {}
+      }
     } catch (e) {
       note("no pudimos leer los precios. recarga la página en un momento.");
     }
@@ -51,7 +56,11 @@
     ui.state = R.replay(ui.mine, ui.candles, nowSec());
     const s = ui.state;
     const lastClose = Math.max(...R.ASSETS.map((a) => { const l = ui.candles[a].filter((k) => k.t + R.CANDLE <= nowSec()); return l.length ? l[l.length - 1].t + R.CANDLE : 0; }));
-    $("meta").textContent = "último cierre de vela: " + when(lastClose);
+    const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    const sd = new Date(s.season.start * 1000), ed = new Date(s.season.end * 1000), p2 = (n) => String(n).padStart(2, "0");
+    const endDay = p2(ed.getUTCDate()) + "/" + p2(ed.getUTCMonth() + 1);
+    $("meta").textContent = "temporada " + MES[sd.getUTCMonth()] + "–" + MES[(sd.getUTCMonth() + 3) % 12] + " " + sd.getUTCFullYear() + " · termina el " + endDay + " · último cierre de vela: " + when(lastClose);
+    $("season-note").textContent = "la temporada reinicia a todos con 1.000 USD el " + endDay;
     $("balance").textContent = fmt(s.balance);
     $("equity").textContent = fmt(s.equity);
     $("avail").textContent = "disponible: " + fmt(s.balance);
