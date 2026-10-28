@@ -1,5 +1,7 @@
 [Versión en español](README.es.md)
 
+Maintained by Criptonautas. Not affiliated with or endorsed by Discourse (Civilized Discourse Construction Kit, Inc.).
+
 Educational simulator. Nothing here is financial advice.
 
 # discourse-nautas-paper-trading
