@@ -70,9 +70,10 @@ function replay(keyValues, candles, now) {
     st.history.push({ t, kind, asset: p.asset, price, usd: back, pnl: kind === "liq" ? -p.usd : pnl, id: p.id });
   };
   const times = [...new Set(ASSETS.flatMap((a) => candles[a].map((k) => k.t)))].sort((a, b) => a - b);
+  const at = Object.fromEntries(ASSETS.map((a) => { const m = new Map(); for (const k of candles[a]) if (!m.has(k.t)) m.set(k.t, k); return [a, m]; })); // first candle per time, as find() did
   let qi = 0;
   for (const t of times) {
-    const byAsset = Object.fromEntries(ASSETS.map((a) => [a, candles[a].find((k) => k.t === t)]));
+    const byAsset = Object.fromEntries(ASSETS.map((a) => [a, at[a].get(t)]));
     if (!closed({ t })) break;
     for (const p of [...st.positions]) {
       const k = byAsset[p.asset];
