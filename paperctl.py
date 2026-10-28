@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT.parent / "discourse-nautas-quizz"))
 import quizctl
 
 POST_ID = 362214  # first post of "prueba paper trading" (topic 7161): the artifact hangs off this post
-HEIGHT = 1920  # shortcut: 1895px measured in preview.html at 650px (two positions, one pending order, history and ranking folded); re-measure after UI changes
+HEIGHT = 1920  # shortcut: max measured + 16 rounded up to the next 10; measured in preview.html with two positions, one pending order, history and ranking folded: 1895px at 650px, 1749px at 375px; re-measure after UI changes
 IDS = ROOT / "artifact.json"
 
 

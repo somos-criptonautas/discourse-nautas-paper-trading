@@ -218,8 +218,9 @@
   chartEl.addEventListener("pointerdown", (e) => {
     lastKind = null;
     const z0 = e.target.closest && e.target.closest(".zone");
-    if (z0 && !z0.classList.contains("price")) {
+    if (e.button === 0 && z0 && !z0.classList.contains("price")) {
       ptrs.set(e.pointerId, e.clientX);
+      if (pinch || ptrs.size > 2) return; // a third finger never starts a drag
       if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.abs(a - b) || 1, count: ui.view.count, end: ui.view.end === null ? closed().length : ui.view.end }; drag = null; chartEl.setPointerCapture(e.pointerId); return; }
     }
     const z = e.target.closest && e.target.closest(".zone"), svg = chartEl.querySelector("svg");
@@ -244,6 +245,7 @@
   const endDrag = (e) => { ptrs.delete(e.pointerId); if (pinch) { pinch = null; ptrs.clear(); } drag = null; };
   chartEl.addEventListener("pointerup", endDrag);
   chartEl.addEventListener("pointercancel", endDrag);
+  chartEl.addEventListener("lostpointercapture", endDrag);
   chartEl.addEventListener("dblclick", () => {
     if (lastKind === "price") { ui.view.yScale = null; render(); } else if (lastKind === "time") setView(180, null);
   });
