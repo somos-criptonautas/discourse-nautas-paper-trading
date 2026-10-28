@@ -141,3 +141,25 @@ assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, tp: 10 }, 10, 1000, 
 assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, sl: 10 }, 10, 1000, 3), /stop-loss/);
 
 console.log("replay ok");
+
+// --- seasons ---
+const u = (y, m, d, h = 0, mi = 0, s = 0) => Date.UTC(y, m, d, h, mi, s) / 1000;
+assert.strictEqual(R.seasonStart(u(2026, 9, 28)), u(2026, 8, 1));
+assert.strictEqual(R.seasonEnd(u(2026, 9, 28)), u(2027, 0, 1));
+assert.strictEqual(R.seasonStart(u(2027, 0, 1)), u(2027, 0, 1));
+assert.strictEqual(R.seasonStart(u(2026, 11, 31, 23, 59, 59)), u(2026, 8, 1));
+assert.strictEqual(R.seasonStart(u(2027, 3, 30)), u(2027, 0, 1));
+assert.strictEqual(R.seasonEnd(u(2027, 3, 30)), u(2027, 4, 1));
+assert.strictEqual(R.seasonStart(u(2027, 4, 1)), u(2027, 4, 1));
+{
+  const S = u(2026, 8, 1), sNow = T0 + 10 * R.CANDLE; // T0 sits inside the Sep-Dec 2026 season
+  const old = (ms, v) => ({ key: (v === "1" ? "reset-" : "o-") + ms, value: v, created_at: new Date(ms).toISOString() });
+  const prev = old((S - 86400) * 1000, buy(500)), prevReset = old((S - 86400) * 1000 + 1, "1");
+  let s = R.replay([prev, prevReset, ...kvs([[at(1), buy(100)]])], candles([[10, 9, 10], [13, 9.5, 12], [13, 9.5, 12]]), sNow);
+  assert.strictEqual(s.resets, 0);
+  assert.strictEqual(s.history.filter((h) => h.kind === "invalid" || h.kind === "reset").length, 0);
+  assert.strictEqual(s.history.filter((h) => h.kind === "buy").length, 1);
+  assert.deepStrictEqual(s.season, { start: S, end: u(2027, 0, 1) });
+  s = R.replay([prev], candles([[10, 9, 10]]), sNow);
+  assert.strictEqual(s.balance, 1000); assert.strictEqual(s.history.length, 0);
+}

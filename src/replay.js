@@ -36,6 +36,16 @@ function candleAt(list, sec) {
   return list.findIndex((k) => sec >= k.t && sec < k.t + CANDLE);
 }
 
+// Seasons are UTC calendar blocks starting Jan 1, May 1 and Sep 1
+function seasonStart(sec) {
+  const d = new Date(sec * 1000);
+  return Date.UTC(d.getUTCFullYear(), Math.floor(d.getUTCMonth() / 4) * 4, 1) / 1000;
+}
+function seasonEnd(sec) {
+  const d = new Date(seasonStart(sec) * 1000);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 4, 1) / 1000;
+}
+
 function parseOrder(kv) {
   const created = Math.floor(Date.parse(kv.created_at) / 1000);
   if (!Number.isFinite(created)) return null;
@@ -55,11 +65,12 @@ function parseOrder(kv) {
 
 // Replays every order against the candles. Fills (liq, sl, tp) happen inside a candle; orders fill at its close.
 function replay(keyValues, candles, now) {
-  const all = keyValues.map(parseOrder).filter(Boolean).sort((a, b) => a.created - b.created || (a.id < b.id ? -1 : 1));
+  const sStart = seasonStart(now); // the season start is an implicit reset: older keys are ignored entirely
+  const all = keyValues.map(parseOrder).filter((o) => o && o.created >= sStart).sort((a, b) => a.created - b.created || (a.id < b.id ? -1 : 1));
   const resets = all.filter((o) => o.reset);
   const last = resets[resets.length - 1];
   const orders = all.filter((o) => !o.reset && (!last || o.created > last.created));
-  const st = { balance: START_USD, equity: START_USD, perf: 0, resets: resets.length, positions: [], pending: [], history: [] };
+  const st = { balance: START_USD, equity: START_USD, perf: 0, resets: resets.length, season: { start: sStart, end: seasonEnd(now) }, positions: [], pending: [], history: [] };
   if (last) st.history.push({ t: last.created, kind: "reset", id: last.id });
   const closed = (k) => k.t + CANDLE <= now;
   const closePos = (p, kind, price, t) => {
@@ -136,5 +147,5 @@ function checkOrder(o, ref, balance, keyCount) {
   return "";
 }
 
-const api = { checkOrder, KEYS_FULL, ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, mergeCandles, candleAt, parseOrder, replay };
+const api = { checkOrder, KEYS_FULL, ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, seasonStart, seasonEnd, mergeCandles, candleAt, parseOrder, replay };
 if (typeof module !== "undefined") module.exports = api; else if (typeof window !== "undefined") window.Replay = api;
