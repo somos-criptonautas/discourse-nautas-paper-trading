@@ -91,10 +91,10 @@
     $("chart").innerHTML = C.chartSVG(list, lines, { width: 640, height: 260, volume: true, last, yScale: ui.view.yScale, stoch: C.stochastic(all).slice(from, end) }) || "<p class='pt-meta'>sin velas en este rango.</p>";
   }
 
-  // TP/SL start at the current price; a field the user touched is left alone
+  // TP/SL stay empty (= no TP / no SL); the current price shows as their placeholder
   function prefill() {
     const p = ui.now && ui.now[ui.asset];
-    for (const id of ["f-tp", "f-sl"]) if (p && !$(id).dataset.touched) $(id).value = Number(p.toPrecision(5));
+    for (const id of ["f-tp", "f-sl"]) if (p) $(id).placeholder = Number(p.toPrecision(5));
   }
   function clearTouched() { for (const id of ["f-tp", "f-sl"]) { delete $(id).dataset.touched; $(id).value = ""; } prefill(); }
 
@@ -155,6 +155,11 @@
   $("sel-asset").innerHTML = opts;
   $("sel-asset").onchange = (e) => { ui.asset = e.target.value; ui.view.yScale = null; clearTouched(); render(); };
   for (const id of ["f-tp", "f-sl"]) $(id).addEventListener("input", () => { $(id).dataset.touched = "1"; });
+  // Focusing an empty TP/SL fills it with the placeholder price so the user edits the digits
+  for (const id of ["f-tp", "f-sl"]) $(id).addEventListener("focus", () => {
+    const el = $(id);
+    if (el.value === "" && el.placeholder !== "" && Number.isFinite(+el.placeholder)) { el.value = el.placeholder; el.dataset.touched = "1"; validate(); }
+  });
   for (const id of ["f-usd", "f-tp", "f-sl"]) $(id).addEventListener("input", validate);
   for (const r of document.querySelectorAll("input[name=lev]")) r.addEventListener("change", validate);
 
