@@ -20,11 +20,13 @@ Triggers: `Every 5 min` (schedule) and `Manual Trigger` (backfill).
 
 1. `pairs` (Code): one item per Kraken pair `{asset, pair, backfill}`; `backfill` is true only when `Manual Trigger` ran (`$('Manual Trigger').isExecuted`). Holds only the `KRAKEN_PAIRS` line of `dist/n8n-prices.js`.
 2. `kraken` (HTTP GET): `https://api.kraken.com/0/public/OHLC?pair={{$json.pair}}&interval=240`, on error continue (a failing pair is skipped).
-3. `weekly-keys` (Code, once for all items): full `dist/n8n-prices.js` + glue; builds `weeklyKeys(ohlc, now, backfill)` plus the `now` key.
+3. `weekly-keys` (Code, once for all items): full `dist/n8n-prices.js` + glue; builds `weeklyKeys(ohlc, now, backfill)` plus the `now` key. The glue matches each Kraken response to its pair by item index (`$('pairs').all()[i]`), never with `itemMatching`, which fails after an HTTP node in this mode.
 4. `write-key` (HTTP POST): one request per item, `{key, value, public: true}`.
 5. Prune branch from the schedule: `prune window 03:00 UTC` (IF `hour == 3 && minute < 5`) -> `read-old-pages` (paginated GET) -> `find-old` (Code: system `candles-*` keys whose `t0` is older than `weekStart(now) - 26 weeks`; aborts if the fetch is partial) -> `delete-key` (HTTP DELETE `?key=`). Holds `weekStart` only.
 
 Backfill: open the workflow in n8n and run it from `Manual Trigger` ("Execute workflow" on that trigger), or `execute_workflow` with `triggerNodeName: "Manual Trigger"`. It writes every weekly key Kraken's 720 candles cover (about 36) and `now`. Safe to repeat.
+
+Status: prices and ranking published on 2026-10-28; daily unpublished until the group message topic exists. Task runner: external, one runner pointed at `n8n-worker:5679` (queue mode); manual executions are offloaded to the worker.
 
 ## paper-trading-ranking
 
