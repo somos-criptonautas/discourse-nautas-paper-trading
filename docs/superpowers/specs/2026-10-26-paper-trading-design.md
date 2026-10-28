@@ -61,19 +61,23 @@ válida es `created_at` del servidor). Valor JSON:
 - Reinicio: clave `reset-<timestamp>` con valor `"1"`. El repaso empieza en el último marcador con saldo
   1.000. Al reiniciar el artifact borra las claves de orden anteriores al marcador; los marcadores no
   se borran nunca.
-- Límite: 100 claves por usuario y artifact. Marcadores incluidos, quedan unas 95 órdenes entre reinicios.
-  El artifact avisa al llegar a 90.
+- Límite: 100 claves por usuario y artifact, marcadores incluidos. Las compras se bloquean desde 95 claves
+  con el aviso "llegamos al límite de claves guardadas"; las 5 restantes quedan para cerrar posiciones.
+  El cierre se bloquea recién en 100, con el mismo aviso.
 
 **Repaso** (función `replay(orders, candles, now)`): ordena por `created_at`, parte del último reset,
 ejecuta cada orden al cierre de su vela de 4h, y por cada vela posterior revisa liquidación, SL y TP de las
-posiciones abiertas, en ese orden. Devuelve saldo en USD, posiciones abiertas con su valor al último cierre, historial de
+posiciones abiertas, en ese orden. Devuelve saldo en USD, posiciones abiertas valuadas al cierre de la última vela cerrada (no al precio `now`), historial de
 ejecuciones y rendimiento total. Órdenes inválidas (activo desconocido, `usd` mayor que el saldo,
 venta de una posición inexistente o ya cerrada) se ignoran y se marcan en el historial.
 
 **Antitrampa**: borrar una orden perdedora inflaría el resultado. n8n guarda en su Data Table
 `paper_trading_keys` cada `(user_id, key, created_at)` que vio. Si en una corrida falta una clave vista
 cuyo `created_at` es posterior al último marcador del usuario, ese usuario sale del ranking con la
-marca "borró operaciones" hasta su próximo reinicio.
+marca "borró operaciones" hasta su próximo reinicio. Sobrescribir una clave también cuenta: Discourse
+conserva `created_at` y solo mueve `updated_at`, así que una clave `o-*` o `reset-*` posterior al último
+marcador con `updated_at` distinto de `created_at` saca al usuario del ranking, y el repaso marca esa orden
+como no ejecutada ("orden modificada después de enviarla").
 
 ## 2. Datos publicados por `system`
 
