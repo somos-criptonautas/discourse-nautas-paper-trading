@@ -40,6 +40,7 @@ Trigger: hourly at minute 7.
 6. `write-ranking` (HTTP POST): key `ranking`, public.
 7. `split-new-seen` -> `insert-seen` (Data Table insert `user_id`, `key`, `created_at`).
 8. `any flagged?` (IF `flagged.length > 0`) -> `notify-flag` (POST `/posts.json` to `topic_id` from `topic`, text with the flagged user ids). Note: it repeats every hour while a user stays flagged.
+9. Group branch, after `rank`: `group` (HTTP GET `/groups/paper-trading.json`, credential required, continue on error) -> `any-rows?` (IF ranking `rows` not empty) -> `add-members` (HTTP PUT `/groups/{group.id}/members.json`, `usernames` = every `rows[].u` comma-separated, retry 3, continue on error so the ranking write is never affected). It only adds members to the `paper-trading` group (so the daily summary reaches traders); it never removes anyone.
 
 ## paper-trading-daily
 
