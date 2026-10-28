@@ -66,11 +66,12 @@
   const pair = (a) => a.toUpperCase() + "/USDT";
   function closed() { return ui.candles[ui.asset].filter((k) => k.t + R.CANDLE <= nowSec()); }
   // Zoom/pan state: count visible candles, end = index after the last visible one (null = latest)
-  function setView(count, end) {
+  function setView(count, end, light) {
     const n = closed().length, v = ui.view;
     v.count = Math.max(Math.min(12, n), Math.min(n, Math.round(count)));
+    end = end === null ? null : Math.round(end);
     v.end = end === null || end >= n ? null : Math.max(v.count, end);
-    render();
+    light ? renderChart() : render(); // light: only the chart (used while dragging)
   }
   function zoom(f) { setView(ui.view.count * f, ui.view.end); }
   function pan(dir) { const n = closed().length, e = (ui.view.end === null ? n : ui.view.end) + dir * Math.max(1, Math.round(ui.view.count / 4)); setView(ui.view.count, e); }
@@ -152,7 +153,7 @@
 
   const opts = R.ASSETS.map((a) => `<option value="${a}">${pair(a)}</option>`).join("");
   $("sel-asset").innerHTML = opts;
-  $("sel-asset").onchange = (e) => { ui.asset = e.target.value; clearTouched(); render(); };
+  $("sel-asset").onchange = (e) => { ui.asset = e.target.value; ui.view.yScale = null; clearTouched(); render(); };
   for (const id of ["f-tp", "f-sl"]) $(id).addEventListener("input", () => { $(id).dataset.touched = "1"; });
   for (const id of ["f-usd", "f-tp", "f-sl"]) $(id).addEventListener("input", validate);
   for (const r of document.querySelectorAll("input[name=lev]")) r.addEventListener("change", validate);
@@ -161,8 +162,9 @@
   let drag = null, lastKind = null; // pointer capture retargets click/dblclick to #chart, so lastKind remembers the zone from pointerdown
   const chartEl = $("chart");
   chartEl.addEventListener("pointerdown", (e) => {
+    lastKind = null;
     const z = e.target.closest && e.target.closest(".zone"), svg = chartEl.querySelector("svg");
-    if (!z || !svg) return;
+    if (e.button !== 0 || !z || !svg) return;
     const n = closed().length, v = ui.view, all = closed(), end = v.end === null ? n : v.end, list = all.slice(Math.max(0, end - v.count), end);
     const k = svg.clientWidth / 640, span = (Math.max(...list.map((c) => c.h)) - Math.min(...list.map((c) => c.l))) * 1.08;
     drag = { kind: z.classList.contains("price") ? "price" : z.classList.contains("time") ? "time" : "pan", x: e.clientX, y: e.clientY, count: v.count, end, factor: v.yScale ? v.yScale.factor : 1, offset: v.yScale ? v.yScale.offset : 0, cwPx: ((640 - 64) / v.count) * k, plotPx: (260 - 30) * k, span };
@@ -174,9 +176,9 @@
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y, v = ui.view;
     if (drag.kind === "pan") {
       if (v.yScale) v.yScale = { factor: drag.factor, offset: drag.offset + (dy / drag.plotPx) * drag.span * drag.factor };
-      setView(drag.count, drag.end - dx / drag.cwPx);
-    } else if (drag.kind === "time") setView(drag.count * Math.pow(1.1, -dx / 40), drag.end);
-    else { v.yScale = { factor: Math.min(20, Math.max(0.1, drag.factor * Math.pow(1.1, dy / 40))), offset: drag.offset }; render(); }
+      setView(drag.count, drag.end - dx / drag.cwPx, true);
+    } else if (drag.kind === "time") setView(drag.count * Math.pow(1.1, -dx / 40), drag.end, true);
+    else { v.yScale = { factor: Math.min(20, Math.max(0.1, drag.factor * Math.pow(1.1, dy / 40))), offset: drag.offset }; renderChart(); }
   });
   const endDrag = () => { drag = null; };
   chartEl.addEventListener("pointerup", endDrag);

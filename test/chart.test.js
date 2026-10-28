@@ -53,4 +53,7 @@ const axisY = (s) => [...s.matchAll(/<text class="axis" x="582"[^>]*>([\d.]+)</g
 const a0 = axisY(chartSVG(c, [], { width: 640, height: 260 })), a2 = axisY(chartSVG(c, [], { width: 640, height: 260, yScale: { factor: 2, offset: 0 } }));
 assert.ok(a2[0] < a0[0] && a2[a2.length - 1] > a0[a0.length - 1]);
 for (const z of ["price", "time", "pan"]) assert.match(svg, new RegExp('class="zone ' + z + '"'));
+const zoomed = chartSVG(c, [{ price: 12, label: "TP", cls: "tp" }], { width: 640, height: 260, yScale: { factor: 0.2, offset: 0 } });
+assert.match(zoomed, /class="line tp off"/); // inside the candle range but outside the visible window
+assert.match(zoomed, />↑ TP 12</);
 console.log("chart ok");

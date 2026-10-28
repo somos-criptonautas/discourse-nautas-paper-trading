@@ -42,13 +42,12 @@ function chartSVG(candles, lines, opts) {
     const d = new Date(k.t * 1000), day = String(d.getUTCDate()).padStart(2, "0") + "/" + String(d.getUTCMonth() + 1).padStart(2, "0");
     if (d.getUTCHours() === 0 && Math.floor(k.t / 86400) % dayStep === 0) out += `<text class="axis" x="${(i * cw + cw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${day}</text>`;
   });
-  const cl = candles.flatMap((k) => [k.h, k.l]), cLo = Math.min(...cl), cHi = Math.max(...cl);
   const pinned = { up: 0, down: 0 }; // labels already stacked at each edge
   for (const l of lines) {
     // out-of-range lines are pinned to the edge instead of stretching the scale
-    const off = l.price < cLo ? "↓ " : l.price > cHi ? "↑ " : "";
-    const yy = (off ? (l.price < cLo ? H - padB : padT) : Math.min(H - padB, Math.max(padT, y(l.price)))).toFixed(1);
-    out += `<line class="line ${esc(l.cls)}${off ? " off" : ""}" x1="0" x2="${W - padR}" y1="${yy}" y2="${yy}"/><text class="label ${esc(l.cls)}${off ? " off" : ""}" x="4" y="${(+yy + (off && l.price > cHi ? 12 + 12 * pinned.up++ : -4 - (off ? 12 * pinned.down++ : 0))).toFixed(1)}">${off}${esc(l.label)} ${fmtPrice(l.price)}</text>`;
+    const off = l.price < lo ? "↓ " : l.price > hi ? "↑ " : "";
+    const yy = (off ? (l.price < lo ? H - padB : padT) : Math.min(H - padB, Math.max(padT, y(l.price)))).toFixed(1);
+    out += `<line class="line ${esc(l.cls)}${off ? " off" : ""}" x1="0" x2="${W - padR}" y1="${yy}" y2="${yy}"/><text class="label ${esc(l.cls)}${off ? " off" : ""}" x="4" y="${(+yy + (off && l.price > hi ? 12 + 12 * pinned.up++ : -4 - (off ? 12 * pinned.down++ : 0))).toFixed(1)}">${off}${esc(l.label)} ${fmtPrice(l.price)}</text>`;
   }
   if (Number.isFinite(opts.last)) {
     // pinned to the edge when outside the candle range, like the other lines
