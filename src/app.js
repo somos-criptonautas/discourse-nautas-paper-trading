@@ -188,6 +188,7 @@
 
   async function close(p) {
     if (busy) return;
+    if (ui.mine.length >= 100) return note(R.KEYS_FULL);
     if (ui.state.pending.some((o) => o.of === p.id)) return note("ya hay un cierre pendiente para esa posición.");
     await write("o-" + Date.now(), { side: "sell", of: p.id }, "cierre guardado. se ejecuta al cierre de la vela.");
   }

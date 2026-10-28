@@ -4,6 +4,7 @@ const GROUPS = { a: ["btc", "eth", "paxg"], b: ["xmr", "xno", "trx"] };
 const CANDLE = 4 * 3600;
 const START_USD = 1000, MIN_USD = 10, LIQ_PCT = 0.45, SYSTEM_ID = -1;
 const MODIFIED = "orden modificada después de enviarla";
+const KEYS_FULL = "llegamos al límite de claves guardadas: reiniciamos para seguir operando.";
 
 function weekStart(sec) {
   const d = new Date(sec * 1000);
@@ -124,7 +125,7 @@ function replay(keyValues, candles, now) {
 
 // Validates a buy before writing it. Messages are what the form shows; equality with ref is rejected.
 function checkOrder(o, ref, balance, keyCount) {
-  if (keyCount >= 100) return "llegamos al límite de claves guardadas: reiniciamos para seguir operando.";
+  if (keyCount >= 95) return KEYS_FULL; // the last 5 of the 100 keys stay free for closing positions
   if (!Number.isFinite(ref) || ref <= 0) return "sin precio de referencia todavía.";
   if (!(o.usd >= MIN_USD)) return "el monto mínimo es 10 USD.";
   if (o.usd > balance) return "el monto supera el saldo disponible.";
@@ -134,5 +135,5 @@ function checkOrder(o, ref, balance, keyCount) {
   return "";
 }
 
-const api = { checkOrder, ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, mergeCandles, candleAt, parseOrder, replay };
+const api = { checkOrder, KEYS_FULL, ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, mergeCandles, candleAt, parseOrder, replay };
 if (typeof module !== "undefined") module.exports = api; else if (typeof window !== "undefined") window.Replay = api;

@@ -133,7 +133,9 @@ assert.match(R.checkOrder({ asset: "btc", usd: 1001, lev: 1 }, 10, 1000, 3), /sa
 assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, tp: 9 }, 10, 1000, 3), /take-profit/);
 assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, sl: 11 }, 10, 1000, 3), /stop-loss/);
 assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 2, sl: 5 }, 10, 1000, 3), /liquidación/); // liq = 5.5
-assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, 10, 1000, 100), /claves/);
+assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, 10, 1000, 95), /claves/); // buys stop at 95 so a sell always fits
+assert.strictEqual(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, 10, 1000, 94), "");
+assert.match(R.KEYS_FULL, /claves/);
 assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1 }, null, 1000, 3), /precio/);
 assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, tp: 10 }, 10, 1000, 3), /take-profit/);
 assert.match(R.checkOrder({ asset: "btc", usd: 100, lev: 1, sl: 10 }, 10, 1000, 3), /stop-loss/);
