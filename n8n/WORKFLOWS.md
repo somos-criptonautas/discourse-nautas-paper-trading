@@ -34,7 +34,7 @@ Trigger: `Hourly at :37` (off :07, where curso-publish-quiz-totals runs, to stay
 2. `read-all-pages` (HTTP GET, paginated as above) -> `merge-pages` (Code): joins every page, adds `user: { username }` from the `users[]` of all pages, aborts on a partial fetch.
 3. `read-seen` (Data Table get, `paper_trading_keys`, all rows, always outputs).
 4. `rank` (Code): full `dist/n8n-ranking.js` + glue; `rankAll` returns `{ ranking, newSeen, flagged }`. A user is flagged when a seen key newer than their last reset vanished (or came back with another `created_at`), or when an `o-*`/`reset-*` key newer than their last reset has `updated_at` different from `created_at` (Discourse keeps `created_at` on overwrite). Flagged users are left out of the ranking. The check cut-off is the later of the user's last reset and the season start, so keys from past seasons may vanish or change without flagging; `ranking` carries `season: { start, end }`.
-5. From `rank`, four branches:
+5. From `rank`, four branches. Execution order v1 runs them top to bottom by canvas position, so `split-new-seen` stays above `write-ranking`: a failed ranking write must never stop the run before orders are recorded, or they could be deleted unseen after they fill.
    - `write-ranking` (HTTP POST): public key `ranking`.
    - `split-new-seen` (Split Out `newSeen`) -> `insert-seen` (Data Table insert `user_id`, `key`, `created_at`).
    - `any flagged?` (IF `flagged.length > 0`) -> `notify-flag` (HTTP POST to `topic`). **Disabled, and staying so**: owner decision, no private message about flagged users. They simply drop out of the ranking with no notice. (Enabling it would post user ids to the public test topic every hour.)

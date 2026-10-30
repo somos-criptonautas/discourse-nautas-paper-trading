@@ -3,6 +3,9 @@ const ASSETS = ["btc", "eth", "paxg", "xmr", "xno", "trx"];
 const GROUPS = { a: ["btc", "eth", "paxg"], b: ["xmr", "xno", "trx"] };
 const CANDLE = 4 * 3600;
 const START_USD = 1000, MIN_USD = 10, LIQ_PCT = 0.45, SYSTEM_ID = -1;
+// The hourly ranking must see an order before it fills, or the order could be deleted unseen once its fill is known:
+// orders from the last hour of a candle fill at the next close. Older orders keep the rule they were placed under.
+const LEAD = 3600, LEAD_FROM = Date.UTC(2026, 10, 2) / 1000;
 const MODIFIED = "orden modificada después de enviarla";
 const KEYS_FULL = "llegamos al límite de claves guardadas: reiniciamos para seguir operando.";
 
@@ -32,6 +35,9 @@ function mergeCandles(res) {
   for (const a of ASSETS) out[a].sort((p, q) => p.t - q.t);
   return out;
 }
+function fillCandle(created) {
+  return Math.floor((created + (created >= LEAD_FROM ? LEAD : 0)) / CANDLE) * CANDLE;
+}
 function candleAt(list, sec) {
   return list.findIndex((k) => sec >= k.t && sec < k.t + CANDLE);
 }
@@ -56,11 +62,11 @@ function parseOrder(kv) {
   let v; try { v = JSON.parse(kv.value); } catch (e) { return null; }
   if (!v || typeof v !== "object") return null;
   const num = (x) => (x === undefined || x === null ? undefined : Number.isFinite(x) && x > 0 ? x : NaN);
-  if (v.side === "sell") return typeof v.of === "string" ? { id: kv.key, created, side: "sell", of: v.of, modified } : null;
+  if (v.side === "sell") return typeof v.of === "string" ? { id: kv.key, created, fill: fillCandle(created), side: "sell", of: v.of, modified } : null;
   if (v.side !== "buy" || !ASSETS.includes(v.asset)) return null;
   const usd = num(v.usd), lev = v.lev === undefined ? 1 : v.lev, tp = num(v.tp), sl = num(v.sl);
   if (!(usd >= MIN_USD) || (lev !== 1 && lev !== 2) || Number.isNaN(tp) || Number.isNaN(sl)) return null;
-  return { id: kv.key, created, side: "buy", asset: v.asset, usd, lev, tp, sl, modified };
+  return { id: kv.key, created, fill: fillCandle(created), side: "buy", asset: v.asset, usd, lev, tp, sl, modified };
 }
 
 // Replays every order against the candles. Fills (liq, sl, tp) happen inside a candle; orders fill at its close.
@@ -94,11 +100,11 @@ function replay(keyValues, candles, now) {
       else if (p.liq && k.l <= p.liq) closePos(p, "liq", Math.min(p.liq, k.h), t);
       else if (p.tp && k.h >= p.tp) closePos(p, "tp", Math.max(p.tp, k.l), t);
     }
-    // Orders created inside this candle fill at its close
-    for (; qi < orders.length && orders[qi].created < t + CANDLE; qi++) {
+    // Orders whose fill candle is this one fill at its close
+    for (; qi < orders.length && orders[qi].fill <= t; qi++) {
       const o = orders[qi];
       const tc = t + CANDLE;
-      if (o.created < t) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: "Sin velas publicadas para esa fecha" }); continue; }
+      if (o.fill < t) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: "Sin velas publicadas para esa fecha" }); continue; }
       if (o.modified) { st.history.push({ t: tc, kind: "invalid", id: o.id, why: MODIFIED }); continue; }
       if (o.side === "sell") {
         const p = st.positions.find((x) => x.id === o.of);
@@ -120,9 +126,9 @@ function replay(keyValues, candles, now) {
   for (; qi < orders.length; qi++) {
     const o = orders[qi];
     const lastT = times.length ? times[times.length - 1] : null;
-    if (lastT === null || o.created < lastT) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: "Sin velas publicadas para esa fecha" }); continue; }
+    if (lastT === null || o.fill < lastT) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: "Sin velas publicadas para esa fecha" }); continue; }
     if (o.modified) { st.history.push({ t: o.created, kind: "invalid", id: o.id, why: MODIFIED }); continue; }
-    st.pending.push({ ...o, fillAt: Math.floor(o.created / CANDLE) * CANDLE + CANDLE });
+    st.pending.push({ ...o, fillAt: o.fill + CANDLE });
   }
   for (const p of st.positions) {
     const list = candles[p.asset].filter(closed);
@@ -147,5 +153,5 @@ function checkOrder(o, ref, balance, keyCount) {
   return "";
 }
 
-const api = { checkOrder, KEYS_FULL, ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, seasonStart, seasonEnd, mergeCandles, candleAt, parseOrder, replay };
+const api = { checkOrder, KEYS_FULL, ASSETS, GROUPS, CANDLE, START_USD, MIN_USD, LIQ_PCT, SYSTEM_ID, weekStart, weekKey, seasonStart, seasonEnd, mergeCandles, fillCandle, candleAt, parseOrder, replay };
 if (typeof module !== "undefined") module.exports = api; else if (typeof window !== "undefined") window.Replay = api;

@@ -163,3 +163,16 @@ assert.strictEqual(R.seasonStart(u(2027, 4, 1)), u(2027, 4, 1));
   s = R.replay([prev], candles([[10, 9, 10]]), sNow);
   assert.strictEqual(s.balance, 1000); assert.strictEqual(s.history.length, 0);
 }
+// From LEAD_FROM, an order from the last hour of a candle fills at the next close, so the hourly ranking sees it first
+{
+  const L0 = Date.UTC(2026, 10, 2) / 1000, inL = (i, plus) => (L0 + i * R.CANDLE + plus) * 1000;
+  const lc = (rows) => ({ ...Object.fromEntries(R.ASSETS.map((a) => [a, []])), btc: rows.map((x, i) => ({ t: L0 + i * R.CANDLE, h: x[0], l: x[1], c: x[2] })) });
+  const rows = [[10, 9, 10], [20, 19, 20], [30, 29, 30]], lNow = L0 + 3 * R.CANDLE;
+  assert.strictEqual(R.fillCandle(L0 - 60), Math.floor((L0 - 60) / R.CANDLE) * R.CANDLE); // older orders keep the old rule
+  let s = R.replay(kvs([[inL(0, R.CANDLE - 3601), buy(100)]]), lc(rows), lNow);
+  assert.strictEqual(s.positions[0].entry, 10); // more than an hour before the close: fills at this close
+  s = R.replay(kvs([[inL(0, R.CANDLE - 600), buy(100)]]), lc(rows), lNow);
+  assert.strictEqual(s.positions[0].entry, 20); // last hour: fills at the next close
+  s = R.replay(kvs([[inL(2, R.CANDLE - 600), buy(100)]]), lc(rows), lNow);
+  assert.strictEqual(s.pending[0].fillAt, L0 + 4 * R.CANDLE);
+}
