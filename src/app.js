@@ -168,7 +168,7 @@
   function hint() {
     if (!ui.state) return;
     const f = fields(), ref = refPrice();
-    const next = (Math.floor(nowSec() / R.CANDLE) + 1) * R.CANDLE;
+    const next = R.fillCandle(nowSec()) + R.CANDLE;
     let t = "se ejecuta al cierre de la vela de 4h, a las " + when(next) + ".";
     if (ref && f.usd >= R.MIN_USD) t += " unas " + ((f.usd * f.lev) / ref).toPrecision(4) + " " + ui.asset.toUpperCase() + " a precio de referencia " + C.fmtPrice(ref) + ".";
     if (f.lev === 2 && ref) t += " liquidación cerca de " + C.fmtPrice(ref * (1 - R.LIQ_PCT)) + ". sin intereses: es una simplificación.";
