@@ -5,7 +5,7 @@ Built in n8n (project "D C", tag `discourse`). Error workflow of all three: `wor
 | Workflow | id | Published |
 |---|---|---|
 | paper-trading-prices | `YdmuZPR4VuEaew4m` | yes, every 5 min |
-| paper-trading-ranking | `fzvv7c56koRWUzpK` | yes, hourly at :07 |
+| paper-trading-ranking | `fzvv7c56koRWUzpK` | yes, hourly at :37 |
 | paper-trading-daily | `hhXrhnvESeqwkOlJ` | yes, daily 12:05 UTC |
 
 Task runner: external, one runner pointed at `n8n-worker:5679` (queue mode); manual executions are offloaded to the worker.
@@ -28,7 +28,7 @@ Backfill: open the workflow in n8n and run it from `Manual Trigger` ("Execute wo
 
 ## paper-trading-ranking
 
-Trigger: `Hourly at :07`.
+Trigger: `Hourly at :37` (off :07, where curso-publish-quiz-totals runs, to stay under the Discourse API rate limit).
 
 1. `topic` (Set): `topic_id` 7161 (test topic), only used by `notify-flag`.
 2. `read-all-pages` (HTTP GET, paginated as above) -> `merge-pages` (Code): joins every page, adds `user: { username }` from the `users[]` of all pages, aborts on a partial fetch.
