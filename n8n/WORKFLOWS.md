@@ -38,7 +38,7 @@ Trigger: `Hourly at :07`.
    - `write-ranking` (HTTP POST): public key `ranking`.
    - `split-new-seen` (Split Out `newSeen`) -> `insert-seen` (Data Table insert `user_id`, `key`, `created_at`).
    - `any flagged?` (IF `flagged.length > 0`) -> `notify-flag` (HTTP POST to `topic`). **Disabled, and staying so**: owner decision, no private message about flagged users. They simply drop out of the ranking with no notice. (Enabling it would post user ids to the public test topic every hour.)
-   - `group` (HTTP GET `/groups/paper-trading.json`) -> `members` (HTTP GET `/groups/paper-trading/members.json?limit=1000`, retry 3) -> `any-new?` (IF: ranked usernames not yet in `members` > 0) -> `add-members` (HTTP PUT `/groups/<id>/members.json` with only those usernames; on error continue). Only adds, never removes.
+   - `group` (HTTP GET `/groups/paper-trading.json`) -> `members` (HTTP GET `/groups/paper-trading/members.json?limit=1000`) -> `any-new?` (IF: ranked usernames not yet in `members` > 0) -> `add-members` (HTTP PUT `/groups/<id>/members.json` with only those usernames). All three retry 3 times 5 s apart and continue on error: Discourse rate limits (429) on `group` stopped five hourly runs on 2026-10-28 before `insert-seen`, so this branch must never stop the run. Only adds, never removes.
 
 ## paper-trading-daily
 
